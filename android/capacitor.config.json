@@ -1,0 +1,15 @@
+{
+  "name": "偏离率回测",
+  "appName": "偏离率回测",
+  "appId": "com.boom618.deviation",
+  "webDir": "www",
+  "bundledWebRuntime": false,
+  "android": {
+    "allowMixedContent": true,
+    "captureInput": false,
+    "webContentsDebuggingEnabled": false
+  },
+  "server": {
+    "androidScheme": "https"
+  }
+}

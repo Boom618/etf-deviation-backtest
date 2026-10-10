@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-page-node-id="d1JLuB9eh7sQNfPsKOHVDF">
+<head data-page-node-id="d3xlHQg6EAHgEqD3r25sLT">
+<meta charset="utf-8" data-page-node-id="T2Yow7PNeY77wLr1DbcGqJ">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1" data-page-node-id="Dtn7Zqlo31nEbMA9q1BYbn">
+<meta name="theme-color" content="#0b0e14" media="(prefers-color-scheme: dark)" data-page-node-id="q1GPkdluuHOgTlnENz2DHS">
+<meta name="theme-color" content="#0b0e14" data-page-node-id="jiM7OFOpFfuMK5tjovF4bl">
+<meta name="apple-mobile-web-app-capable" content="yes" data-page-node-id="MgRXRgUrL1Nn3wZogdIg5b">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" data-page-node-id="jTgOUBqL07XDQzUQTc5HQ0">
+<meta name="apple-mobile-web-app-title" content="偏离率回测" data-page-node-id="AbGXQeMvfORlD266xFVTZa">
+<meta name="mobile-web-app-capable" content="yes" data-page-node-id="NMB3DeVlJjI0ffM07TeAOB">
+<meta name="format-detection" content="telephone=no" data-page-node-id="P1Nds0UYETxDBgtItrHwOO">
+<title>ETF 偏离率回测系统</title>
+<link rel="manifest" href="manifest.webmanifest" data-page-node-id="JDm0jl0DDfiRc1ECLZ8z4b">
+<link rel="apple-touch-icon" href="icon-180.png" data-page-node-id="Ld4dGOD1noTFgnm17iVIvo">
+<link rel="icon" href="icon-192.png" type="image/png" data-page-node-id="zJzaiqeL0obfWZ5HEY55J3">
+<link rel="stylesheet" href="style.css" data-page-node-id="cfHI02XdCep33giLBx5eek">
+</head>
+<body data-page-node-id="cPKEX6TtH8EF46GxI6Pws7">
+
+<header class="topbar" data-page-node-id="6DxTPKfxG8HAHKGSb3GBcr">
+  <div class="brand" data-page-node-id="YxHV4ole09oDkjloMhwZtL">
+    <div class="logo" data-page-node-id="5R1YlQF3ygbdTfnhXw78Jg"></div>
+    <div class="brand-txt" data-page-node-id="kiOBt8PPi17A7XzKJvwOId">
+      <h1 data-page-node-id="4mgesuNLGvf8D8028G9cwK">偏离率回测系统</h1>
+      <p data-page-node-id="UHHtSlcQlLHFTiZAhuQLdW">均线偏离 · 网格策略 · 历史回放</p>
+    </div>
+  </div>
+  <div class="topright" data-page-node-id="Sc3YwNEVB6sZkdLoE1bIcE">
+    <div class="sym-badge" id="symBadge" data-page-node-id="1qVY18CySMRpQD1Oz4LMHS">
+      <span class="sym-code" id="symCode" data-page-node-id="NokdsHqtqSjJz8L2ckTk5C">510500</span>
+      <span class="sym-name" id="symName" data-page-node-id="4rWzcxQsysLSVyWvFHKysC">中证500ETF</span>
+    </div>
+    <button class="btn ghost only-desk" id="btnRefresh" title="清除本地缓存并重新拉取行情" data-page-node-id="YYPuJgSJybY8XYgRIVpz2V">刷新数据</button>
+    <button class="btn ghost only-desk" id="btnParams" title="打开参数面板" data-page-node-id="f81EXoqoBErSYb6tOeWajc">参数</button>
+    <a class="btn ghost only-desk" href="/api/backtest" target="_blank" title="查看接口原始返回" data-page-node-id="BvmXGEPpcskrBK9BDiCR9c">API</a>
+  </div>
+</header>
+
+<main class="layout" data-page-node-id="FGTtvqxpDS5iwe67W6Zyq4">
+
+  <!-- ============ 参数面板（移动端为抽屉） ============ -->
+  <div class="drawer-mask" id="drawerMask" data-page-node-id="JkhI4GGCLwMO5rBBmpB9qS"></div>
+  <aside class="panel params" id="paramsPanel" data-page-node-id="jkkIysxPMPdWXnJO3EpJDq">
+    <div class="drawer-head" data-page-node-id="FHmCm0CID27WYiCeFIMt00">
+      <h2 class="ptitle" data-page-node-id="8ao8oPcBLw8ZE8dkg0gEDJ">策略参数</h2>
+      <button class="btn ghost only-mob" id="btnCloseParams" data-page-node-id="fG4Qx7k1osNoON8S3rQPnX">关闭</button>
+    </div>
+
+    <div class="field" data-page-node-id="gGpACg95kVHoG4exmWwu7Y">
+      <label for="symbol" data-page-node-id="EeO5WxEGmvOpnIQRZF82aH">标的</label>
+      <select id="symbol" data-page-node-id="IAxJZl6z7G5tODtNlTZpVK"></select>
+    </div>
+
+    <div class="field" data-page-node-id="vUreHvlU1n6keNQ4YkuEKK">
+      <label data-page-node-id="EtPbZHWq38GFMm7BF2n6Qm">回测区间</label>
+      <div class="row2" data-page-node-id="hGXcchLLqE9JjHb44HmTwE">
+        <input type="date" id="start" data-page-node-id="ZeYA4WUzVcrGLfV5Xm54jF">
+        <span class="tilde" data-page-node-id="YZ9hGoIXci0WeJPnVgenHI">~</span>
+        <input type="date" id="end" data-page-node-id="kQoVwtBufF06VpEH1B55Jb">
+      </div>
+      <div class="chips" id="rangeChips" data-page-node-id="JJlkJIAMAol8ZkQLOkmgtd">
+        <button data-r="1" data-page-node-id="vuCG86e7Sq5waKuinmuI9z">近1年</button>
+        <button data-r="3" data-page-node-id="uuRmtVigrPLFmUEzyHPm7c">近3年</button>
+        <button data-r="5" data-page-node-id="hjnVwIb5ioxeTyc49xaUJ9">近5年</button>
+        <button data-r="0" data-page-node-id="A4vKquPpIjZyPfswhTNUzR">全部</button>
+      </div>
+    </div>
+
+    <div class="field" data-page-node-id="sFMsyRqIPIM9de0S3s94mH">
+      <label for="ma" data-page-node-id="6nT8FODgNGbiOP7gMrJmht">均线周期 <span class="unit" data-page-node-id="fsDbLbIZf7uBxoPQiFpDPW">日</span></label>
+      <div class="slider-row" data-page-node-id="yvd6dyGJzCKRebXr77CLDD">
+        <input type="range" id="maRange" min="5" max="250" step="5" value="20" data-page-node-id="DoAKFvEk4YBY6ywukfJDaf">
+        <input type="number" id="ma" value="20" min="3" max="500" data-page-node-id="cetMI4nRfhY9To8TA5wysN">
+      </div>
+    </div>
+
+    <div class="field" data-page-node-id="iJygGHxYiak9mBy6JXhvzp">
+      <label for="buy" data-page-node-id="MewDNjj26qEN5ocDxQrBUw">买入偏离率 <span class="hint" data-page-node-id="uy2BODesfvz6jCYza5VX1U">低于均线</span></label>
+      <div class="slider-row" data-page-node-id="BB6o4OATJaBnFFh403MRYT">
+        <input type="range" id="buyRange" min="-40" max="-0.5" step="0.5" value="-4" data-page-node-id="8WAyGpYMLfN7UpFbVRXYgu">
+        <div class="unit-in" data-page-node-id="vpt49fYJh2xPoLmJx41esf"><input type="number" id="buy" value="-4" step="0.5" min="-80" max="80" data-page-node-id="oqZqNwXVYZ8Pvo8iIOjgtZ"><span data-page-node-id="m4ei4SVKwDMfw5364XzeFe">%</span></div>
+      </div>
+    </div>
+
+    <div class="field" data-page-node-id="bmwFXaySd4iWOG0iyrhgj9">
+      <label for="sell" data-page-node-id="w9Ze7Mr1FOMR3tDwaKa0Ts">卖出偏离率 <span class="hint" data-page-node-id="Ul9XDXA1KCFWfDkhIZgqpG">高于均线</span></label>
+      <div class="slider-row" data-page-node-id="Hon87rDf7KJGgODn1XtZO3">
+        <input type="range" id="sellRange" min="0.5" max="40" step="0.5" value="5" data-page-node-id="jT4GwHpoB4xxIjGIRVqAWa">
+        <div class="unit-in" data-page-node-id="2XwkhBThvYDNRlx8OYUWX0"><input type="number" id="sell" value="5" step="0.5" min="0.1" max="80" data-page-node-id="ES29z5W2SFKrCjItEKsXnU"><span data-page-node-id="rl17a1F4CeS5b4G7Tktacu">%</span></div>
+      </div>
+    </div>
+
+    <div class="divider" data-page-node-id="pb2ADepcxEJoHEnw3pw4jG"></div>
+
+    <div class="field" data-page-node-id="YFrQ6nOvVUtCGf2mqcdyvv">
+      <label for="capital" data-page-node-id="MnBivW8AiIc5GVSfxgqUbY">初始资金 <span class="unit" data-page-node-id="SN4WSCS7XBaQF4EPTrL4zb">元</span></label>
+      <input type="number" id="capital" value="100000" step="10000" min="1000" data-page-node-id="PUpJTOcFCUdqaYYi5Hz2LE">
+    </div>
+
+    <div class="field" data-page-node-id="2fA4AmPBMvjCBxoGv7bFCG">
+      <label for="fee" data-page-node-id="284YeexFHl79RAtEWhDbrV">佣金费率 <span class="unit" data-page-node-id="d5Fz35x18PAmOaQHrTeyyA">双边</span></label>
+      <div class="unit-in wide" data-page-node-id="MbxwsYMDWArhyGJLJdBqBG">
+        <input type="number" id="fee" value="0.05" step="0.01" min="0" max="5" data-page-node-id="tVXsBYc8yyuY5uNUJpQGku">
+        <span data-page-node-id="BNTNXeCEVmAe5p0t2yyV7z">%</span>
+      </div>
+    </div>
+
+    <div class="field" data-page-node-id="LisOBehtlWrJw9rmyb7NFG">
+      <label data-page-node-id="DGNHEXchkxhCQqNXKSXxNq">仓位模式</label>
+      <div class="seg" id="posMode" data-page-node-id="ZWrCg991ORCiExZe9D7Vxu">
+        <button data-v="1" class="on" data-page-node-id="gtU78FmrJxFfCRkBVIX3ot">满仓进出</button>
+        <button data-v="0" data-page-node-id="MvobhpusjtZ3oHafPZ86Lv">半仓进出</button>
+      </div>
+    </div>
+
+    <div class="qr-box only-desk" data-page-node-id="0InZqiA9iXq5jccppcWZYX">
+      <div class="qr-head" data-page-node-id="OzXPp2jjPPGqW7ZwB9s48S">手机访问</div>
+      <div class="qr-img" id="qrImg" data-page-node-id="aBTZ9C2U5AqFHl5TgPvilx"></div>
+      <code class="qr-url" id="qrUrl" data-page-node-id="Dpkdx1nfDhQgpDG1TLs7kC">—</code>
+      <p class="qr-tip" data-page-node-id="82bUwFrlh9lupKUCwHnxNk">同一 Wi-Fi 下扫码打开，也可「添加到主屏幕」像 App 一样用</p>
+    </div>
+
+    <button class="btn primary block" id="btnRun" data-page-node-id="2GUdJfBHn8lJhDXVWVxOBS">开始回测</button>
+
+    <div class="presets" data-page-node-id="pmKO2ZDc1UzDc00MqpJ5QA">
+      <span data-page-node-id="Kqi2YeQJpCV4EdT1hKt4ah">快速预设</span>
+      <button data-p="20,-4,5" data-page-node-id="JJKd1OvCYIfRaCg11m8jFg">短线20日</button>
+      <button data-p="60,-10,10" data-page-node-id="d8jBfV3BXFBx4m2Hue1nMd">中线60日</button>
+      <button data-p="120,-15,15" data-page-node-id="C0sSyBr5xkGR1bMXnP4x2w">长线120日</button>
+      <button data-p="60,-8,20" data-page-node-id="tiIxS94FLOARNj2JQlAnTp">低买高卖</button>
+    </div>
+
+    <button class="btn ghost block only-mob" id="btnRefreshM" style="margin-top:10px" data-page-node-id="1yfCmA3wQaZArRJWHPy6nn">刷新行情数据</button>
+  </aside>
+
+  <!-- ============ 结果区 ============ -->
+  <section class="content" data-page-node-id="fB9CzpzvKtpQ59WIseIkll">
+
+    <div class="kpis" id="kpis" data-page-node-id="9Bix5ZUdB7ElNs4buN7JGX">
+      <div class="kpi" data-page-node-id="4ORJKQWGjuqrlUux2hsE1I">
+        <span class="k-label" data-page-node-id="SMuRxpKeD65u0rXjp1CTfD">当前偏离率</span>
+        <b class="k-val" id="kCur" data-page-node-id="9BdTdWXGzYKbPyEFZPxHcu">--</b>
+        <span class="k-sub" id="kCurSub" data-page-node-id="Bi6sWsRY8pSC2Hq76dQRkp">相对 MA 均线</span>
+      </div>
+      <div class="kpi" data-page-node-id="WjdYiq3ZfQRra8nlIZ4dIn">
+        <span class="k-label" data-page-node-id="EWUfrK9gbhsHu4hFItPJaV">区间最大偏离率</span>
+        <b class="k-val up" id="kMax" data-page-node-id="m53WgEFzQb9oIAwGaVDYV7">--</b>
+        <span class="k-sub" id="kMaxSub" data-page-node-id="9OfUO34igHrIIQpABtTE7W">历史高点</span>
+      </div>
+      <div class="kpi" data-page-node-id="63ZScFGsPAYTHP8t60mG0F">
+        <span class="k-label" data-page-node-id="f13dPuvGe2ur9ZHtuzjGqH">区间最小偏离率</span>
+        <b class="k-val down" id="kMin" data-page-node-id="rC5c7F6iVjo1EF71lzDFYu">--</b>
+        <span class="k-sub" id="kMinSub" data-page-node-id="hbpDfSFPlPxG1FXUfd1ypw">历史低点</span>
+      </div>
+      <div class="kpi" data-page-node-id="stFaKqdzw2RDB9GCt9vAKh">
+        <span class="k-label" data-page-node-id="yOoX3QteEdnCNNv2svDLXi">策略收益率</span>
+        <b class="k-val" id="kStrat" data-page-node-id="Zoo4yZI0iZlMUpwNHabPBR">--</b>
+        <span class="k-sub" id="kStratSub" data-page-node-id="UfzYJott94iA3BU4MkSiMT">对比基准</span>
+      </div>
+    </div>
+
+    <div class="card chart-card" data-page-node-id="ery2QaprZbiEa9gBW9Cgsm">
+      <div class="card-head" data-page-node-id="OxxxmrV1GGlkPSVNUT5P5D">
+        <h3 data-page-node-id="bxKaPl5cXuLsOqRTXFEArs">偏离率走势</h3>
+        <div class="legend" id="devLegend" data-page-node-id="beH55qILEHY6XXMLUi3hkW"></div>
+      </div>
+      <div class="chart-wrap tall" data-page-node-id="BgR4Txpih4A9kQMz4V4Shc">
+        <canvas id="chartDev" role="img" aria-label="价格相对均线的偏离率走势图" data-page-node-id="3tYhT49DHeqzFQWpgmel0U"></canvas>
+        <div class="ctip" data-page-node-id="1A47SDcLT8JNHMotpH7oke"></div>
+      </div>
+    </div>
+
+    <div class="card chart-card" data-page-node-id="cellBH2lTpjGjrHAgETxq7">
+      <div class="card-head" data-page-node-id="2L8SUsM0Y2ZvYOaazIubb8">
+        <h3 data-page-node-id="FSfyIshoPzLFbZn0Rbkefe">价格与均线 · 买卖点</h3>
+        <div class="legend" id="pxLegend" data-page-node-id="3VDis7xGRds7xonD0UBXiN"></div>
+      </div>
+      <div class="chart-wrap" data-page-node-id="Dubb8qkQCMBZX6ZiO3z9a7">
+        <canvas id="chartPx" role="img" aria-label="收盘价、均线与买卖信号点" data-page-node-id="GFChNd6cokQuAiDMhC2Ea5"></canvas>
+        <div class="ctip" data-page-node-id="C1QQfD8by4h9u9xuA8u39u"></div>
+      </div>
+    </div>
+
+    <div class="card chart-card" data-page-node-id="s3DYBrPhDHEh7QxUDcFUJx">
+      <div class="card-head" data-page-node-id="jlEX48zoR5vT1WDs8DiKIx">
+        <h3 data-page-node-id="ZqtFgFkbtP4hix6yaLAkW8">收益对比</h3>
+        <div class="legend" id="eqLegend" data-page-node-id="oAFYil64lUP1jAjfP4Ddet"></div>
+      </div>
+      <div class="chart-wrap" data-page-node-id="rXwIrDkkcePV4ZLh0qxQuM">
+        <canvas id="chartEq" role="img" aria-label="策略净值与基准净值对比" data-page-node-id="49hqnOeEDQxVYGPqz8kpJS"></canvas>
+        <div class="ctip" data-page-node-id="RYgiglHDZJgG6B6aUWDb9T"></div>
+      </div>
+    </div>
+
+    <div class="card" data-page-node-id="oSbAOWB9iHcIrpuDrzFkdQ">
+      <div class="card-head" data-page-node-id="Ao9XK0LppVTgm2I2iOWcXZ"><h3 data-page-node-id="rQaSRTh2eMVeS8fu1zV3Fg">回测结果</h3></div>
+      <div class="metrics" id="metrics" data-page-node-id="8xOy7Mx8n2DZbWNaJzeUuL"></div>
+    </div>
+
+    <div class="card" data-page-node-id="fDTbmCEKFsx2DKpWzW1ugf">
+      <div class="card-head" data-page-node-id="aIhqMs1EiTmQ94xEkQxzbM">
+        <h3 data-page-node-id="DYI9gaNZVqIfcXPCySru42">成交记录</h3>
+        <span class="count" id="tradeCount" data-page-node-id="ms6Amc2tGtbJksSxGWGsln"></span>
+      </div>
+      <div class="table-scroll" data-page-node-id="ZUAJUeV7M9tPImmFh0yD2e">
+        <table id="tradeTable" data-page-node-id="ipmHETwNsIbDGocnlrbo2K">
+          <thead data-page-node-id="nB9mjEji59hCgdKfD9Fu1U">
+            <tr data-page-node-id="if840MuT7N97MyFnWosOHY">
+              <th data-page-node-id="VOPuZGx6ewLNidfg2VbiHJ">#</th><th data-page-node-id="4rvBhtEPAsuJPMBphLE9VU">信号日</th><th data-page-node-id="gNJ4sqaNNiP0ie1qZkpvqb">成交日</th><th data-page-node-id="FRz0sAYi4ZlZlSci84vnTq">成交价</th>
+              <th data-page-node-id="cmgN0Tn89FhiK5CTjW5ciX">买入偏离</th><th data-page-node-id="e9NdHCpdF5Yjahgqpz1CHo">卖出日</th><th data-page-node-id="T2hjuSOHnr9HHLUyQPWmqs">成交价</th><th data-page-node-id="F0AVDDDeHfqRV22L4iatND">卖出偏离</th>
+              <th data-page-node-id="YDC2T4qks2ehK4K1hR0LBR">持有天数</th><th data-page-node-id="sHgcI4zN9ePOvGTUI8xFu2">收益率</th><th data-page-node-id="NRauGuucQ5wHEGFIW4OfTA">盈亏</th>
+            </tr>
+          </thead>
+          <tbody id="tradeBody" data-page-node-id="rzY7ArXSh0AKwAlXwuisLf"></tbody>
+        </table>
+      </div>
+      <div class="empty" id="tradeEmpty" data-page-node-id="AgVVq5yiuAJG2a7vGCQpAG">该参数下未产生任何交易，可尝试放宽偏离率阈值</div>
+    </div>
+
+    <footer class="foot" data-page-node-id="TqEaYefDiehjjEcF0TsTY1">
+      数据来源：腾讯财经（前复权）· 成交按 T+1 次日开盘价计 · 仅供参考，不构成投资建议
+    </footer>
+  </section>
+</main>
+
+<!-- 移动端底部固定操作条 -->
+<div class="mobile-bar only-mob" data-page-node-id="ZLreNFIZeqdgYkHOCr31mA">
+  <button class="btn ghost" id="btnParams2" data-page-node-id="cDNih4UNCXvVocyqEQYPpP">调整参数</button>
+  <button class="btn primary" id="btnRun2" data-page-node-id="CJoTA5JpQJ3IAp6ZFdILIT">开始回测</button>
+</div>
+
+<div class="loading" id="loading" data-page-node-id="JD7gPvt6ge7AWzFX0pTWU3"><div class="spin" data-page-node-id="BGa7HXuKuklZZAjHnGv0Hg"></div><span data-page-node-id="BoeokTWc78NmNaUN6iCjUc">正在计算…</span></div>
+<div class="toast" id="toast" data-page-node-id="AbXIQ65eDoUvCBVh6jE3GW"></div>
+
+<script src="chart.js"></script>
+<script src="data.js"></script>
+<script src="backtest.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

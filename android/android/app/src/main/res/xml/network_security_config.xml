@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  行情来自第三方接口（腾讯 / 东方财富），App 内 WebView 需要直连它们，
+  因此显式放行这些域名。App 本身不加载任何远程页面内容。
+-->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">web.ifzq.gtimg.cn</domain>
+        <domain includeSubdomains="true">push2his.eastmoney.com</domain>
+        <domain includeSubdomains="true">qt.gtimg.cn</domain>
+        <domain includeSubdomains="true">money.finance.sina.com.cn</domain>
+    </domain-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

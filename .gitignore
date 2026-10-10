@@ -1,0 +1,42 @@
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# ---- 行情缓存（可重新生成，不入库）----
+etf-deviation-backtest/cache/
+*.json.gz
+
+# ---- Android ----
+android/node_modules/
+android/www/
+android/.gradle/
+android/android/build/
+android/android/app/build/
+android/android/capacitor-cordova-android-plugins/
+android/android/local.properties
+android/android/app/src/main/assets/public/
+android/android/app/src/main/assets/capacitor.config.json
+android/android/app/src/main/assets/capacitor.plugins.json
+
+# 签名文件属于敏感信息，绝不入库
+android/android/*.keystore
+android/android/*.jks
+android/android/keystore.properties
+
+# ---- 编辑器 / 系统 ----
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+
+# ---- 日志 ----
+*.log
+npm-debug.log*
+
+# ---- 本地 Agent 工作区（个人笔记，不入库）----
+.workbuddy/
