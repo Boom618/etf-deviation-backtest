@@ -41,5 +41,8 @@ npm-debug.log*
 # ---- 本地 Agent 工作区（个人笔记，不入库）----
 .workbuddy/
 
-# ---- 构建产物（体积大，用 Releases 分发）----
-release/
+# ---- 构建产物 ----
+# release/ 下的英文名 APK 会入库，供 Releases 页直接下载。
+# 中文名副本仅作本地备份，内容完全相同，不重复入库。
+release/*.apk
+!release/deviation-backtest-*.apk
