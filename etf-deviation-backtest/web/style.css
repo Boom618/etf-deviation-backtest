@@ -149,6 +149,10 @@ input[type=range]::-moz-range-thumb {
   background: var(--bg); border: 1px solid var(--line); color: var(--txt-3); transition: .15s;
 }
 .chips button:hover, .presets button:hover { color: var(--accent-2); border-color: rgba(56, 139, 253, .45); }
+.chips button.on {
+  background: rgba(56, 139, 253, .16);
+  border-color: var(--accent); color: var(--accent-2); font-weight: 500;
+}
 
 .seg { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 3px; background: var(--bg); border-radius: 8px; border: 1px solid var(--line); }
 .seg button { padding: 7px; font-size: 12.5px; border-radius: 6px; color: var(--txt-3); transition: .15s; }

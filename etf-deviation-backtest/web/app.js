@@ -36,6 +36,13 @@
     return d.toISOString().slice(0, 10);
   }
 
+  // 高亮当前生效的区间快捷按钮；传 null 表示取消高亮（用户手动改过日期）
+  function markRangeChip(years) {
+    document.querySelectorAll('#rangeChips button').forEach(function (b) {
+      b.classList.toggle('on', years != null && parseInt(b.dataset.r, 10) === years);
+    });
+  }
+
   // -------------------------------------------------- 初始化标的
   function initSymbols(list) {
     var sel = $('symbol'), groups = {};
@@ -137,7 +144,13 @@
       var y = parseInt(b.dataset.r, 10);
       $('start').value = y === 0 ? '2013-01-01' : yearsAgo(y);
       $('end').value = today();
+      markRangeChip(y);
       run();
+    });
+
+    // 手动改日期后取消快捷按钮的选中态，避免与实际区间不一致
+    ['start', 'end'].forEach(function (id) {
+      $(id).addEventListener('change', function () { markRangeChip(null); });
     });
 
     document.querySelectorAll('.presets button').forEach(function (b) {
@@ -433,8 +446,10 @@
 
   // -------------------------------------------------- 启动
   function init() {
-    $('start').value = yearsAgo(5);
+    // 默认区间：近一年
+    $('start').value = yearsAgo(1);
     $('end').value = today();
+    markRangeChip(1);
 
     registerSW();
     loadShareInfo();

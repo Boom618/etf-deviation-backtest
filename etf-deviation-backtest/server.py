@@ -65,8 +65,11 @@ def api_backtest(qs, body):
     if symbol:
         market = symbol["market"]
 
-    start = src.get("start") or "2015-01-01"
-    end = src.get("end") or "2099-12-31"
+    # 未指定区间时默认近一年，与前端保持一致
+    import datetime as _dt
+    _default_start = (_dt.date.today() - _dt.timedelta(days=365)).isoformat()
+    start = src.get("start") or _default_start
+    end = src.get("end") or _dt.date.today().isoformat()
 
     ma_period = int(_num(src, "ma_period", 20))
     # 买入偏离率语义为负数（-4 表示 dev <= -4% 买入）；卖出为正数。
