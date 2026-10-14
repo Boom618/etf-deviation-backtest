@@ -73,6 +73,15 @@ def run_backtest(bars, ma_period=60, buy_dev=10.0, sell_dev=10.0,
     closes = [b["close"] for b in bars]
     n = len(bars)
 
+    # ---- 回测起点：report_start 之前的数据仅用于均线预热，不参与交易。
+    # 否则策略会在窗口开始前就已持仓，净值起点被压低、指标失真。
+    start_i = 0
+    if report_start:
+        for i, d in enumerate(dates):
+            if d >= report_start:
+                start_i = i
+                break
+
     ma, dev = deviation_series(closes, ma_period)
 
     # 阈值归一化：
@@ -97,6 +106,10 @@ def run_backtest(bars, ma_period=60, buy_dev=10.0, sell_dev=10.0,
     for i in range(n):
         d = dates[i]
         px_close = closes[i]
+
+        # 起点之前只做均线预热，不交易
+        if i < start_i:
+            continue
 
         # ---- 1) 执行上一交易日收盘后产生的信号（次日开盘成交）
         if pending == "buy" and cash > 0:
@@ -175,6 +188,9 @@ def run_backtest(bars, ma_period=60, buy_dev=10.0, sell_dev=10.0,
                         t["sell_dev"] = dev[i]
                         break
 
+    # 剔除未成交的占位记录：若买入信号出现在最后一日之后无次日可成交
+    trades = [t for t in trades if t["buy_date"] is not None]
+
     # 未平仓的持仓按最后一日收盘价结算（模拟持仓中）
     for t in trades:
         if t["buy_date"] is not None and t["sell_date"] is None:
@@ -187,34 +203,23 @@ def run_backtest(bars, ma_period=60, buy_dev=10.0, sell_dev=10.0,
             t["hold_days"] = (n - 1) - t.get("_bidx", n - 1)
             t.pop("_bidx", None)
 
-    # ---- 基准（买入持有），以报告起点为基准重新归一
-    base_i = 0
-    if report_start:
-        for i, d in enumerate(dates):
-            if d >= report_start:
-                base_i = i
-                break
-    bench_equity = [closes[i] / closes[base_i] * initial_capital
+    # ---- 基准（买入持有），以回测起点归一
+    bench_equity = [closes[i] / closes[start_i] * initial_capital
                     for i in range(n)]
 
-    # ---- 统计窗口：剔除仅用于均线预热的前置数据
-    cut = base_i if report_start else 0
-    rep_dates = dates[cut:]
+    # ---- 统计窗口：equity 只记录 start_i 之后的部分，故下标从 0 开始
+    cut = 0
+    rep_dates = dates[start_i:]
     rep_equity = equity[cut:]
-    rep_bench = bench_equity[cut:]
-    rep_dev = dev[cut:]
-    rep_ma = ma[cut:]
-    rep_closes = closes[cut:]
+    rep_bench = bench_equity[start_i:]
+    rep_dev = dev[start_i:]
+    rep_ma = ma[start_i:]
+    rep_closes = closes[start_i:]
 
-    # 手续费按报告区间内的成交重新累计
-    rep_fee = 0.0
-    for t in trades:
-        if t.get("buy_date") and t["buy_date"] >= (report_start or dates[0]):
-            rep_fee += t.get("fee") or 0.0
-
-    rep_trades = [t for t in trades
-                  if t.get("buy_date") and t["buy_date"] >= (report_start or dates[0])]
-    rep_markers = [m for m in markers if m["date"] >= (report_start or dates[0])]
+    # 回测已在 start_i 起算，此处无成交早于窗口起点
+    rep_fee = sum(t.get("fee") or 0.0 for t in trades)
+    rep_trades = trades
+    rep_markers = markers
 
     metrics = compute_metrics(rep_equity, rep_bench, rep_trades,
                               initial_capital, rep_fee, rep_dates)

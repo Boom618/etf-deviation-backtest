@@ -150,7 +150,17 @@
     var trades = [], equity = [], markers = [];
     var investRatio = fullPosition ? 1 : 0.5;
 
+    // 回测起点：report_start 之前的数据仅用于均线预热，不参与交易。
+    // 否则策略会在窗口开始前就已持仓，净值起点被压低、指标失真。
+    var startI = 0;
+    if (opt.report_start) {
+      for (var s = 0; s < n; s++) {
+        if (dates[s] >= opt.report_start) { startI = s; break; }
+      }
+    }
+
     for (var i = 0; i < n; i++) {
+      if (i < startI) continue;          // 起点之前只做均线预热，不交易
       var d = dates[i], pxClose = closes[i];
 
       // 1) 执行上一交易日收盘后产生的信号（次日开盘成交）
@@ -229,6 +239,9 @@
       }
     }
 
+    // 剔除未成交的占位记录（买入信号出现在最后一日，无次日可成交）
+    trades = trades.filter(function (t) { return t.buy_date != null; });
+
     // 未平仓持仓按最后一日收盘价结算
     for (var ti = 0; ti < trades.length; ti++) {
       var t = trades[ti];
@@ -244,19 +257,13 @@
       delete t._bidx;
     }
 
-    // 统计窗口：剔除均线预热用的前置数据
-    var baseI = 0;
-    if (opt.report_start) {
-      for (var j = 0; j < n; j++) {
-        if (dates[j] >= opt.report_start) { baseI = j; break; }
-      }
-    }
-    var repDates = dates.slice(baseI);
-    var repEquity = equity.slice(baseI);
-    var repCloses = closes.slice(baseI);
-    var repMa = ma.slice(baseI);
-    var repDev = dev.slice(baseI);
-    var repBench = closes.slice(baseI).map(function (c) { return c / closes[baseI] * initialCapital; });
+    // 统计窗口：equity 只记录 startI 之后的部分，故下标从 0 开始
+    var repDates = dates.slice(startI);
+    var repEquity = equity.slice(0);
+    var repCloses = closes.slice(startI);
+    var repMa = ma.slice(startI);
+    var repDev = dev.slice(startI);
+    var repBench = closes.slice(startI).map(function (c) { return c / closes[startI] * initialCapital; });
 
     var from = opt.report_start || dates[0];
     var repTrades = trades.filter(function (t) { return t.buy_date && t.buy_date >= from; });

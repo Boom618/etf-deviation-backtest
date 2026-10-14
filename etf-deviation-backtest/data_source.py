@@ -48,6 +48,7 @@ SYMBOLS = [
     {"code": "000300", "market": 1, "name": "沪深300指数", "cat": "指数"},
     {"code": "000001", "market": 1, "name": "上证指数", "cat": "指数"},
     {"code": "399006", "market": 0, "name": "创业板指", "cat": "指数"},
+    {"code": "600900", "market": 1, "name": "长江电力", "cat": "个股"},
 ]
 
 TX_URL = ("https://web.ifzq.gtimg.cn/appstock/app/fqkline/get"
@@ -211,10 +212,29 @@ def fetch_kline(code, market, max_age=1800):
         raise RuntimeError("未获取到 %s 的行情数据（腾讯: %s / 新浪: %s）"
                            % (code, err1, err2))
 
+    # 高分红标的（如长江电力）早期前复权价会被累计调整成负数，
+    # 这类数据会让均线与回撤计算失真，直接丢弃。
+    meta["bars"] = _drop_invalid(meta["bars"])
+
     meta["name"] = _display_name(code, meta)
     with open(path, "w", encoding="utf-8") as f:
         json.dump(meta, f, ensure_ascii=False, separators=(",", ":"))
     return meta, False
+
+
+def _drop_invalid(bars):
+    """剔除价格非正或非有限的 bar（高分红标的早期前复权价可能为负）。"""
+    out = []
+    for b in bars:
+        ok = True
+        for k in ("open", "close", "high", "low"):
+            v = b.get(k)
+            if v is None or v != v or v <= 0:      # None / NaN / <=0
+                ok = False
+                break
+        if ok:
+            out.append(b)
+    return out
 
 
 def _display_name(code, meta):

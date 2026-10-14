@@ -28,7 +28,8 @@
     { code: '000905', market: 1, name: '中证500指数', cat: '指数' },
     { code: '000300', market: 1, name: '沪深300指数', cat: '指数' },
     { code: '000001', market: 1, name: '上证指数', cat: '指数' },
-    { code: '399006', market: 0, name: '创业板指', cat: '指数' }
+    { code: '399006', market: 0, name: '创业板指', cat: '指数' },
+    { code: '600900', market: 1, name: '长江电力', cat: '个股' }
   ];
 
   function findSymbol(code) {
@@ -114,12 +115,22 @@
   }
 
   // ---------------------------------------------------------------- 统一入口
+  // 剔除价格非正或非有限的 bar（高分红标的早期前复权价可能为负）
+  function dropInvalid(bars) {
+    return (bars || []).filter(function (b) {
+      return ['open', 'close', 'high', 'low'].every(function (k) {
+        var v = b[k];
+        return typeof v === 'number' && isFinite(v) && v > 0;
+      });
+    });
+  }
+
   function fetchKline(code, market) {
     return fetchTencent(code, market)
       .then(function (bars) {
-        if (bars && bars.length >= 60) return bars;
+        if (bars && bars.length >= 60) return dropInvalid(bars);
         return fetchEastmoney(code, market).then(function (b2) {
-          if (b2 && b2.length >= 60) return b2;
+          if (b2 && b2.length >= 60) return dropInvalid(b2);
           throw new Error('未获取到 ' + code + ' 的行情数据');
         });
       });
@@ -130,7 +141,7 @@
     return fetch('/api/kline?code=' + encodeURIComponent(code) + '&market=' + market)
       .then(function (r) { return r.json(); })
       .then(function (j) {
-        if (j && j.ok && j.bars && j.bars.length) return j.bars;
+        if (j && j.ok && j.bars && j.bars.length) return dropInvalid(j.bars);
         throw new Error('proxy miss');
       })
       .catch(function () { return fetchKline(code, market); });
