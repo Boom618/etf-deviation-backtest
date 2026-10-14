@@ -2,7 +2,7 @@
  * 只缓存静态资源（HTML/CSS/JS/图标）。
  * 行情与回测接口一律走网络，避免显示过期行情造成误判。
  */
-var CACHE = 'deviation-v1';
+var CACHE = 'deviation-v2';
 var SHELL = [
   './',
   './index.html',
@@ -55,16 +55,18 @@ self.addEventListener('fetch', function (e) {
     return;
   }
 
-  // 静态资源：缓存优先
+  // 静态资源：网络优先 + 后台更新缓存。
+  // 不用「缓存优先」——那会导致 app.js/chart.js 改动后长期不生效，
+  // 用户反复刷新仍看到旧界面（尤其在「添加到主屏幕」的 PWA 里）。
   e.respondWith(
-    caches.match(req).then(function (hit) {
-      return hit || fetch(req).then(function (res) {
-        if (res && res.status === 200 && res.type === 'basic') {
-          var copy = res.clone();
-          caches.open(CACHE).then(function (c) { c.put(req, copy); });
-        }
-        return res;
-      });
+    fetch(req).then(function (res) {
+      if (res && res.status === 200 && res.type === 'basic') {
+        var copy = res.clone();
+        caches.open(CACHE).then(function (c) { c.put(req, copy); });
+      }
+      return res;
+    }).catch(function () {
+      return caches.match(req);      // 断网时回退到缓存
     })
   );
 });
