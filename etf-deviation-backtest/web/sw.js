@@ -2,7 +2,7 @@
  * 只缓存静态资源（HTML/CSS/JS/图标）。
  * 行情与回测接口一律走网络，避免显示过期行情造成误判。
  */
-var CACHE = 'deviation-v2';
+var CACHE = 'deviation-v3';
 var SHELL = [
   './',
   './index.html',

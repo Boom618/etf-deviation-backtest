@@ -64,7 +64,7 @@ Windows 用户可直接双击 `启动.bat`。
 
 ```bash
 # 直接从仓库下载（v1.0.0）
-https://github.com/Boom618/etf-deviation-backtest/raw/main/release/deviation-backtest-v1.0.0.apk
+https://github.com/Boom618/etf-deviation-backtest/raw/main/release/deviation-backtest-v1.1.0.apk
 ```
 
 或克隆后取用：
@@ -78,9 +78,20 @@ cd etf-deviation-backtest
 | 项目 | 值 |
 |------|-----|
 | 包名 | `com.boom618.deviation` |
+| 版本 | 1.1.0（versionCode 2） |
 | 最低系统 | Android 7.0（API 24） |
 | 体积 | 约 3.0 MB |
 | 签名 | 已签名 release 包 |
+
+### 更新日志
+
+**v1.1.0**
+- 新增标的：长江电力（600900），归入「个股」分类
+- 修复：非正价格数据清洗（高分红标的前复权早期可能为负）
+- 修复：回测起点之前已持仓导致收益指标失真
+- 修复：未成交占位交易污染交易数与胜率
+- 修复：PWA 缓存导致前端改动不生效
+- 默认回测区间改为近一年（MA20 / 买入 -4% / 卖出 +5%）
 
 ---
 

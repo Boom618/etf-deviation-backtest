@@ -474,6 +474,8 @@
   // 注册 Service Worker：支持添加到手机主屏、断网时仍能打开界面
   function registerSW() {
     if (!('serviceWorker' in navigator)) return;
+    // App（Capacitor）用 https://localhost 加载本地资源，无需也不该注册 SW
+    if (window.Capacitor && window.Capacitor.isNativePlatform) return;
     if (location.protocol !== 'https:' && location.hostname !== 'localhost'
       && location.hostname !== '127.0.0.1') return;
     navigator.serviceWorker.register('sw.js').catch(function () { /* 静默失败，不影响使用 */ });
