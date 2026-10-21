@@ -1,0 +1,189 @@
+<view class="page">
+  <!-- 加载遮罩 -->
+  <view class="loading-mask" wx:if="{{loading}}">
+    <view class="loading-box">{{loadingText}}…</view>
+  </view>
+
+  <!-- 标的 -->
+  <view class="card">
+    <view class="card-title">标的</view>
+    <picker mode="selector" range="{{symbols}}" range-key="name" value="{{symbolIndex}}" bindchange="onSymbolChange">
+      <view class="picker-box">
+        <text class="picker-val">{{symbols[symbolIndex].name || '加载中'}}</text>
+        <text class="picker-arrow">▾</text>
+      </view>
+    </picker>
+  </view>
+
+  <!-- 回测区间 -->
+  <view class="card">
+    <view class="card-title">回测区间</view>
+    <view class="chips">
+      <view class="chip {{rangeYears === 1 ? 'on' : ''}}" data-y="1" bindtap="onRangeTap">近1年</view>
+      <view class="chip {{rangeYears === 3 ? 'on' : ''}}" data-y="3" bindtap="onRangeTap">近3年</view>
+      <view class="chip {{rangeYears === 5 ? 'on' : ''}}" data-y="5" bindtap="onRangeTap">近5年</view>
+      <view class="chip {{rangeYears === 0 ? 'on' : ''}}" data-y="0" bindtap="onRangeTap">全部</view>
+    </view>
+    <view class="date-row">
+      <text class="date-label">起始</text>
+      <text class="date-val">{{startDate}}</text>
+      <text class="date-label">结束</text>
+      <text class="date-val">{{endDate}}</text>
+    </view>
+  </view>
+
+  <!-- 参数 -->
+  <view class="card">
+    <view class="card-title">参数</view>
+
+    <view class="field">
+      <view class="field-label">
+        <text>均线周期</text>
+        <text class="field-hint">日</text>
+      </view>
+      <view class="slider-row">
+        <slider class="slider" min="5" max="250" step="5" value="{{maPeriod}}" activeColor="#388bfd" backgroundColor="rgba(255,255,255,0.13)" block-color="#58a6ff" block-size="18" bindchange="onMaChange" />
+        <input class="slider-num" type="number" value="{{maPeriod}}" bindblur="onMaChange" />
+      </view>
+    </view>
+
+    <view class="field">
+      <view class="field-label">
+        <text>买入偏离率</text>
+        <text class="field-hint">低于均线</text>
+      </view>
+      <view class="slider-row">
+        <slider class="slider" min="-40" max="-0.5" step="0.5" value="{{buyDev}}" activeColor="#2ea043" backgroundColor="rgba(255,255,255,0.13)" block-color="#3fb950" block-size="18" bindchanging="onBuySlider" bindchange="onBuySlider" />
+        <input class="slider-num" type="digit" value="{{buyDev}}" bindblur="onBuyInput" />
+      </view>
+    </view>
+
+    <view class="field">
+      <view class="field-label">
+        <text>卖出偏离率</text>
+        <text class="field-hint">高于均线</text>
+      </view>
+      <view class="slider-row">
+        <slider class="slider" min="0.5" max="40" step="0.5" value="{{sellDev}}" activeColor="#f85149" backgroundColor="rgba(255,255,255,0.13)" block-color="#f85149" block-size="18" bindchange="onSellChange" />
+        <input class="slider-num" type="digit" value="{{sellDev}}" bindblur="onSellInput" />
+      </view>
+    </view>
+
+    <view class="field">
+      <view class="field-label">
+        <text>初始资金</text>
+        <text class="field-hint">元</text>
+      </view>
+      <input class="input" type="number" value="{{capital}}" bindblur="onCapitalChange" />
+    </view>
+
+    <view class="field">
+      <view class="field-label">
+        <text>佣金费率</text>
+        <text class="field-hint">双边 %</text>
+      </view>
+      <input class="input" type="digit" value="{{feeRate}}" bindblur="onFeeChange" />
+    </view>
+
+    <view class="field">
+      <view class="field-label">
+        <text>仓位模式</text>
+      </view>
+      <view class="chips">
+        <view class="chip {{fullPosition ? 'on' : ''}}" data-v="1" bindtap="onPosTap">满仓进出</view>
+        <view class="chip {{!fullPosition ? 'on' : ''}}" data-v="0" bindtap="onPosTap">半仓进出</view>
+      </view>
+    </view>
+
+    <button class="btn primary" bindtap="run">开始回测</button>
+  </view>
+
+  <!-- 提示 -->
+  <view class="warn-box" wx:for="{{warnings}}" wx:key="index">{{item}}</view>
+
+  <!-- 结果 -->
+  <block wx:if="{{hasResult}}">
+    <view class="card">
+      <view class="card-title">
+        <text>核心指标</text>
+        <text class="field-hint">{{windowLabel}}</text>
+      </view>
+      <view class="kpi-grid">
+        <view class="kpi" wx:for="{{kpis}}" wx:key="label">
+          <view class="kpi-label">{{item.label}}</view>
+          <view class="kpi-value {{item.cls}}">{{item.value}}</view>
+          <view class="kpi-sub" wx:if="{{item.sub}}">{{item.sub}}</view>
+        </view>
+      </view>
+    </view>
+
+    <view class="card">
+      <view class="card-title">详细指标</view>
+      <view class="metric-row" wx:for="{{metricRows}}" wx:key="index">
+        <text class="metric-name">{{item[0]}}</text>
+        <text class="metric-val {{item[2]}}">{{item[1]}}</text>
+      </view>
+    </view>
+
+    <view class="card">
+      <view class="card-title">偏离率走势</view>
+      <view class="chart-wrap">
+        <canvas
+          type="2d"
+          id="chartDev"
+          class="chart-canvas"
+          bindtouchstart="onChartTouchStart"
+          bindtouchmove="onChartTouchMove"
+          bindtouchend="onChartTouchEnd"
+          data-id="0"
+        ></canvas>
+        <view class="chart-tip" wx:if="{{tipVisible}}" style="left: {{tip.x + 14}}px; top: {{tip.y}}px;">
+          <view class="tip-row"><text class="tip-label">{{tip.date}}</text></view>
+          <view class="tip-row" wx:for="{{tip.rows}}" wx:key="index">
+            <text class="tip-label">{{item[0]}}</text>
+            <text class="tip-val">{{item[1]}}</text>
+          </view>
+          <view class="tip-sig" wx:if="{{tip.sig === 'buy'}}" style="color:#2ea043">● 触发买入信号</view>
+          <view class="tip-sig" wx:if="{{tip.sig === 'sell'}}" style="color:#f85149">● 触发卖出信号</view>
+        </view>
+      </view>
+    </view>
+
+    <view class="card">
+      <view class="card-title">价格与均线</view>
+      <view class="chart-wrap">
+        <canvas
+          type="2d"
+          id="chartPx"
+          class="chart-canvas"
+          bindtouchstart="onChartTouchStart"
+          bindtouchmove="onChartTouchMove"
+          bindtouchend="onChartTouchEnd"
+          data-id="1"
+        ></canvas>
+      </view>
+    </view>
+
+    <view class="card">
+      <view class="card-title">收益对比</view>
+      <view class="chart-wrap">
+        <canvas
+          type="2d"
+          id="chartEq"
+          class="chart-canvas"
+          bindtouchstart="onChartTouchStart"
+          bindtouchmove="onChartTouchMove"
+          bindtouchend="onChartTouchEnd"
+          data-id="2"
+        ></canvas>
+      </view>
+    </view>
+
+    <view class="card">
+      <view class="card-title">说明</view>
+      <view class="note-text">信号在收盘后产生，次日开盘价成交。图表可左右拖动查看任意时点数据。</view>
+    </view>
+  </block>
+
+  <view class="empty" wx:if="{{!hasResult && !loading}}">设置参数后点「开始回测」</view>
+</view>

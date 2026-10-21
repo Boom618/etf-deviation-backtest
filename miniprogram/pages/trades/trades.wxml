@@ -1,0 +1,46 @@
+<view class="page">
+  <block wx:if="{{hasResult}}">
+    <view class="card">
+      <view class="card-title">
+        <text>{{symbolName}}</text>
+        <text class="field-hint">{{windowLabel}}</text>
+      </view>
+      <view class="kpi-grid">
+        <view class="kpi">
+          <view class="kpi-label">成交笔数</view>
+          <view class="kpi-value flat">{{summary.count}}</view>
+        </view>
+        <view class="kpi">
+          <view class="kpi-label">胜率</view>
+          <view class="kpi-value flat">{{summary.winRate}}</view>
+        </view>
+        <view class="kpi">
+          <view class="kpi-label">累计手续费</view>
+          <view class="kpi-value flat">{{summary.totalFee}}</view>
+        </view>
+      </view>
+    </view>
+
+    <view class="card">
+      <view class="card-title">逐笔成交</view>
+      <view class="trade-item" wx:for="{{trades}}" wx:key="no">
+        <view class="trade-head">
+          <text class="trade-no">#{{item.no}}</text>
+          <text class="trade-pnl {{item.pnlCls}}">{{item.pnl}}</text>
+        </view>
+        <view class="trade-grid">
+          <view class="trade-cell"><text class="k">信号日 </text><text class="v">{{item.sigDate}}</text></view>
+          <view class="trade-cell"><text class="k">买入偏离 </text><text class="v">{{item.buyDev}}</text></view>
+          <view class="trade-cell"><text class="k">买入日 </text><text class="v">{{item.buyDate}}</text></view>
+          <view class="trade-cell"><text class="k">买入价 </text><text class="v">{{item.buyPrice}}</text></view>
+          <view class="trade-cell"><text class="k">卖出日 </text><text class="v">{{item.sellDate}}</text></view>
+          <view class="trade-cell"><text class="k">卖出偏离 </text><text class="v">{{item.sellDev}}</text></view>
+          <view class="trade-cell"><text class="k">卖出价 </text><text class="v">{{item.sellPrice}}</text></view>
+          <view class="trade-cell"><text class="k">持有 </text><text class="v">{{item.holdDays}} 天</text></view>
+        </view>
+      </view>
+    </view>
+  </block>
+
+  <view class="empty" wx:if="{{!hasResult}}">先在「回测」页跑一次，这里会显示成交明细</view>
+</view>

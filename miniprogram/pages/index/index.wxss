@@ -1,0 +1,30 @@
+/* pages/index/index.wxss */
+
+.loading-box {
+  background: var(--card);
+  border: 1rpx solid var(--line-2);
+  border-radius: 16rpx;
+  padding: 30rpx 50rpx;
+  font-size: 28rpx;
+  color: var(--txt-2);
+}
+
+.date-row {
+  display: flex;
+  align-items: center;
+  font-size: 24rpx;
+  flex-wrap: wrap;
+}
+
+.date-label { color: var(--txt-3); margin-right: 8rpx; }
+.date-val {
+  color: var(--txt);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  margin-right: 24rpx;
+}
+
+.note-text {
+  font-size: 24rpx;
+  color: var(--txt-3);
+  line-height: 1.7;
+}

@@ -1,0 +1,31 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/trades/trades"
+  ],
+  "window": {
+    "backgroundTextStyle": "light",
+    "navigationBarBackgroundColor": "#0b0e14",
+    "navigationBarTitleText": "偏离率回测",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#0b0e14"
+  },
+  "tabBar": {
+    "color": "#6b7480",
+    "selectedColor": "#58a6ff",
+    "backgroundColor": "#12161f",
+    "borderStyle": "black",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "回测"
+      },
+      {
+        "pagePath": "pages/trades/trades",
+        "text": "成交"
+      }
+    ]
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+}
