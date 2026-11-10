@@ -23,9 +23,9 @@
     var pos = rev ? v < 0 : v > 0;
     return pos ? 'up' : 'down';
   }
-  function toast(msg) {
+  function toast(msg, isErr) {
     var t = $('toast');
-    t.textContent = msg; t.classList.add('on');
+    t.textContent = msg; t.classList.toggle('err', !!isErr); t.classList.add('on');
     clearTimeout(t._tm); t._tm = setTimeout(function () { t.classList.remove('on'); }, 3800);
   }
   function loading(on) { $('loading').classList.toggle('on', !!on); }
@@ -240,7 +240,7 @@
     function refresh() {
       fetch('/api/clearcache', { method: 'POST' })
         .then(function () { toast('缓存已清除，正在重新拉取行情…'); return run(true); })
-        .catch(function () { toast('清缓存失败，已尝试直接刷新'); run(true); });
+        .catch(function () { toast('清缓存失败，已尝试直接刷新', true); run(true); });
     }
     $('btnRefresh').addEventListener('click', refresh);
     $('btnRefreshM').addEventListener('click', function () { closeDrawer(); refresh(); });
@@ -276,7 +276,7 @@
   function runLocal(p, apiErr) {
     if (!window.Backtest || !window.DataSource) {
       loading(false);
-      toast('回测失败：' + (apiErr ? apiErr.message : '引擎未加载'));
+      toast('回测失败：' + (apiErr ? apiErr.message : '引擎未加载'), true);
       return Promise.resolve();
     }
     var sym = window.DataSource.findSymbol(p.code)
@@ -326,7 +326,7 @@
       })
       .catch(function (e2) {
         loading(false);
-        toast('无法获取行情数据：' + e2.message);
+        toast('无法获取行情数据：' + e2.message, true);
       });
   }
 
@@ -427,8 +427,8 @@
     var buyTxt = buy.toFixed(buy % 1 === 0 ? 0 : 1);
     var sellTxt = sell.toFixed(sell % 1 === 0 ? 0 : 1);
     var devBands = [
-      { from: buy, to: null, color: 'rgba(46,160,67,0.10)', label: '买入区 ≤ ' + buyTxt + '%', labelColor: 'rgba(46,160,67,0.6)' },
-      { from: sell, to: null, color: 'rgba(248,81,73,0.10)', label: '卖出区 ≥ +' + sellTxt + '%', labelColor: 'rgba(248,81,73,0.6)' }
+      { from: buy, to: null, color: 'rgba(255,43,43,0.07)', label: '买入区 ≤ ' + buyTxt + '%', labelColor: 'rgba(255,43,43,0.72)' },
+      { from: sell, to: null, color: 'rgba(9,190,79,0.07)', label: '卖出区 ≥ +' + sellTxt + '%', labelColor: 'rgba(9,190,79,0.75)' }
     ];
     // 补全区间终点
     var devVals = dev.filter(function (v) { return v != null; });
@@ -439,13 +439,13 @@
     chDev.setData({
       labels: dates,
       series: [
-        { name: '偏离率', data: dev, color: C.accent, width: 1.8, area: true, fill: 'rgba(56,139,253,0.18)', dotLast: true, showLast: true },
+        { name: '偏离率', data: dev, color: C.accent, width: 1.8, area: true, fill: 'rgba(70,92,255,0.16)', dotLast: true, showLast: true },
         { name: d.params.ma_period + '日均线', data: ma, color: C.ma, width: 1.4, dash: [4, 3] }
       ],
       bands: devBands,
       hlines: [
-        { value: buy, color: 'rgba(46,160,67,0.55)', dash: [5, 4] },
-        { value: sell, color: 'rgba(248,81,73,0.55)', dash: [5, 4] }
+        { value: buy, color: 'rgba(255,43,43,0.5)', dash: [5, 4] },
+        { value: sell, color: 'rgba(9,190,79,0.5)', dash: [5, 4] }
       ],
       markers: markers
     });
@@ -454,7 +454,7 @@
     chPx.setData({
       labels: dates,
       series: [
-        { name: '收盘价', data: closes, color: '#c9d1d9', width: 1.6 },
+        { name: '收盘价', data: closes, color: '#5B6478', width: 1.6 },
         { name: d.params.ma_period + '日均线', data: ma, color: C.ma, width: 1.6, dash: [5, 3], showLast: true }
       ],
       markers: markers
@@ -470,15 +470,15 @@
         { name: '策略净值', data: eq, color: C.accent, width: 1.9, dotLast: true, showLast: true },
         { name: '基准净值（买入持有）', data: bq, color: C.bench, width: 1.4, dotLast: true, showLast: true }
       ],
-      hlines: [{ value: 100, color: 'rgba(255,255,255,0.22)', dash: [3, 4] }]
+      hlines: [{ value: 100, color: 'rgba(24,24,24,0.18)', dash: [3, 4] }]
     });
 
     legend('devLegend', [
       ['偏离率', C.accent], [d.params.ma_period + '日均线', C.ma]
-    ], [['买入区', 'rgba(46,160,67,0.55)', true], ['卖出区', 'rgba(248,81,73,0.55)', true]]);
+    ], [['买入区', 'rgba(255,43,43,0.5)', true], ['卖出区', 'rgba(9,190,79,0.5)', true]]);
 
     legend('pxLegend', [
-      ['收盘价', '#c9d1d9'], ['均线 MA' + d.params.ma_period, C.ma]
+      ['收盘价', '#5B6478'], ['均线 MA' + d.params.ma_period, C.ma]
     ], [['买入', C.up, false], ['卖出', C.down, false]]);
 
     legend('eqLegend', [
@@ -568,8 +568,8 @@
     var d = DATA, s = d.dev[i];
     var sig = '';
     if (s != null) {
-      if (s <= d.params.buy_dev) sig = '<div class="tt-sig" style="color:#2ea043">● 触发买入信号</div>';
-      else if (s >= d.params.sell_dev) sig = '<div class="tt-sig" style="color:#f85149">● 触发卖出信号</div>';
+      if (s <= d.params.buy_dev) sig = '<div class="tt-sig" style="color:' + C.up + '">● 触发买入信号</div>';
+      else if (s >= d.params.sell_dev) sig = '<div class="tt-sig" style="color:' + C.down + '">● 触发卖出信号</div>';
     }
     return '<div class="tt-d">' + d.dates[i] + '</div>' +
       '<div class="tt-r"><span><i style="background:' + C.accent + '"></i>偏离率</span><b>' + spct(s) + '</b></div>' +
@@ -579,7 +579,7 @@
   function pxTip(i) {
     var d = DATA;
     return '<div class="tt-d">' + d.dates[i] + '</div>' +
-      '<div class="tt-r"><span><i style="background:#c9d1d9"></i>收盘价</span><b>' + fmt(d.closes[i], 3) + '</b></div>' +
+      '<div class="tt-r"><span><i style="background:#5B6478"></i>收盘价</span><b>' + fmt(d.closes[i], 3) + '</b></div>' +
       '<div class="tt-r"><span><i style="background:' + C.ma + '"></i>均线</span><b>' + fmt(d.ma[i], 3) + '</b></div>';
   }
   function eqTip(i) {

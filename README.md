@@ -81,8 +81,8 @@ Windows 用户可直接双击 `启动.bat`。
 下载 `release/` 目录下的 APK 安装到手机即可（也可从 [Releases](https://github.com/Boom618/etf-deviation-backtest/releases) 页获取）。App 内置回测引擎，**不需要电脑提供服务**。
 
 ```bash
-# 直接从仓库下载（v1.0.0）
-https://github.com/Boom618/etf-deviation-backtest/raw/main/release/deviation-backtest-v1.1.0.apk
+# 直接从仓库下载（v1.4.0）
+https://github.com/Boom618/etf-deviation-backtest/raw/main/release/deviation-backtest-v1.4.0.apk
 ```
 
 或克隆后取用：
@@ -96,7 +96,7 @@ cd etf-deviation-backtest
 | 项目 | 值 |
 |------|-----|
 | 包名 | `com.boom618.deviation` |
-| 版本 | 1.1.0（versionCode 2） |
+| 版本 | 1.4.0（versionCode 5） |
 | 最低系统 | Android 7.0（API 24） |
 | 体积 | 约 3.0 MB |
 | 签名 | 已签名 release 包 |

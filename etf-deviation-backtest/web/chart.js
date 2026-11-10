@@ -4,17 +4,18 @@
 
   var DPR = global.devicePixelRatio || 1;
 
+  /* 浅色主题调色板（对齐 CoolMall 设计系统） */
   var C = {
-    grid: 'rgba(255,255,255,0.055)',
-    axis: 'rgba(255,255,255,0.16)',
-    text: '#8b949e',
-    textHi: '#e6edf3',
-    up: '#f85149',        // 红涨
-    down: '#2ea043',      // 绿跌
-    accent: '#388bfd',
-    ma: '#d9a441',
-    bench: '#6e7681',
-    cross: 'rgba(255,255,255,0.28)'
+    grid: 'rgba(24,24,24,0.055)',
+    axis: 'rgba(24,24,24,0.13)',
+    text: '#93A0B5',
+    textHi: '#181818',
+    up: '#FF2B2B',        // 红涨 / 买入
+    down: '#09BE4F',      // 绿跌 / 卖出
+    accent: '#465CFF',
+    ma: '#F0A020',
+    bench: '#9AA4B8',
+    cross: 'rgba(24,24,24,0.28)'
   };
 
   function niceTicks(min, max, count) {
@@ -144,10 +145,10 @@
       ctx.fillStyle = b.color;
       ctx.fillRect(g.x0, top, g.x1 - g.x0, bot - top);
       if (b.label) {
-        ctx.fillStyle = b.labelColor || 'rgba(255,255,255,0.4)';
+        ctx.fillStyle = b.labelColor || 'rgba(24,24,24,0.42)';
         ctx.font = '11px system-ui, sans-serif';
         ctx.textAlign = 'left'; ctx.textBaseline = 'top';
-        ctx.fillText(b.label, g.x0 + 6, top + 4);
+        ctx.fillText(b.label, g.x0 + 6, top + 8);   // 下移 8px，避免与阈值虚线重叠
       }
     });
 
@@ -164,13 +165,20 @@
       ctx.fillText(o.yPct ? fmt(t, o.yDec) + '%' : fmt(t, o.yDec), g.x1 + 7, y);
     }
 
-    // ---- X 轴日期
-    var step = Math.max(1, Math.ceil(g.n / 7));
-    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    // ---- X 轴日期（数量随可用宽度自适应，首尾贴边对齐，均匀铺满整条轴）
+    var gap = 74;                                            // 单个日期标签所需最小横向空间
+    var maxN = Math.max(2, Math.min(7, Math.floor((g.x1 - g.x0) / gap)));
+    ctx.textBaseline = 'top';
     ctx.fillStyle = C.text;
-    for (i = 0; i < g.n; i += step) {
-      var lbl = self.data.labels[i] || '';
-      ctx.fillText(lbl.length > 10 ? lbl.slice(2) : lbl, g.px(i), g.y1 + 6);
+    for (var li = 0; li < maxN; li++) {
+      var xi = Math.round(li * (g.n - 1) / (maxN - 1));
+      if (li && xi === Math.round((li - 1) * (g.n - 1) / (maxN - 1))) continue;  // 数据点太少时去重
+      var lbl = self.data.labels[xi] || '';
+      if (lbl.length > 10) lbl = lbl.slice(2);
+      var lx = g.px(xi), half = ctx.measureText(lbl).width / 2;
+      ctx.textAlign = (lx - half < 2) ? 'left'
+        : (lx + half > g.w - 2 ? 'right' : 'center');
+      ctx.fillText(lbl, lx, g.y1 + 6);
     }
 
     // ---- 阈值参考线
@@ -191,8 +199,8 @@
       var s = ss[i], dat = s.data || [];
       if (s.area) {
         var grad = ctx.createLinearGradient(0, g.y0, 0, g.y1);
-        grad.addColorStop(0, s.fill || 'rgba(56,139,253,0.22)');
-        grad.addColorStop(1, 'rgba(56,139,253,0)');
+        grad.addColorStop(0, s.fill || 'rgba(70,92,255,0.20)');
+        grad.addColorStop(1, 'rgba(70,92,255,0)');
         ctx.fillStyle = grad;
         ctx.beginPath();
         var started = false, base = g.y1;
@@ -238,7 +246,7 @@
       if (m.type === 'sell') y = Math.max(g.y0 + 6, y - 2);
       else y = Math.min(g.y1 - 6, y + 2);
       ctx.fillStyle = m.type === 'sell' ? C.down : C.up;
-      ctx.strokeStyle = '#0d1117'; ctx.lineWidth = 1.5;
+      ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.5;
       ctx.beginPath();
       if (m.type === 'sell') {
         ctx.moveTo(x, y + 7); ctx.lineTo(x - 5.5, y - 4); ctx.lineTo(x + 5.5, y - 4);
@@ -258,7 +266,7 @@
         var hv = (ss[i].data || [])[this.hover];
         if (hv == null || !isFinite(hv)) continue;
         ctx.fillStyle = ss[i].color || C.accent;
-        ctx.strokeStyle = '#0d1117'; ctx.lineWidth = 2;
+        ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2;
         ctx.beginPath(); ctx.arc(hx, g.py(hv), 4, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
       }
     }
@@ -280,7 +288,7 @@
         if (ctx.roundRect) ctx.roundRect(g.x1 + 3, ly - 8, tw, 16, 3);
         else ctx.rect(g.x1 + 3, ly - 8, tw, 16);
         ctx.fill();
-        ctx.fillStyle = '#0d1117';
+        ctx.fillStyle = '#ffffff';
         ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
         ctx.fillText(txt, g.x1 + 8, ly);
       }
