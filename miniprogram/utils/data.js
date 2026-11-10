@@ -43,6 +43,32 @@ function findSymbol(code) {
   return null;
 }
 
+/**
+ * 按代码段推断交易所。1 = 上交所，0 = 深交所。无法判断返回 null。
+ * 与后端 data_source.guess_market 规则一致。
+ */
+function guessMarket(code) {
+  const c = String(code || '').trim();
+  if (c.length !== 6 || !/^\d{6}$/.test(c)) return null;
+  const p3 = c.slice(0, 3);
+  const SH = ['600', '601', '603', '605', '688', '689', '900', '730', '780', '787'];
+  const SZ = ['000', '001', '002', '003', '300', '301', '200', '159', '160', '161',
+    '162', '163', '164', '165', '166', '167', '168', '169', '170', '171'];
+  if (SH.indexOf(p3) >= 0) return 1;
+  if (SZ.indexOf(p3) >= 0) return 0;
+  if (c[0] === '5') return 1;   // 沪市 ETF / LOF
+  if (c[0] === '1') return 0;   // 深市 ETF / LOF
+  if (c.slice(0, 2) === '39') return 0;   // 深证指数
+  return null;
+}
+
+/** 解析用户输入的代码，支持 600519 / sh600519 / 600519.sh */
+function parseCode(raw) {
+  const m = String(raw || '').trim().toLowerCase()
+    .match(/^(sh|sz)?(\d{6})(\.(sh|sz))?$/);
+  return m ? m[2] : null;
+}
+
 /** 剔除价格非正或非有限的 bar（高分红标的早期前复权价可能为负） */
 function dropInvalid(bars) {
   return (bars || []).filter(function (b) {
@@ -132,12 +158,18 @@ function fetchEastmoney(code, market) {
 
 // ---------------------------------------------------------------- 统一入口
 
-/** 通过后端中转取行情（推荐路径） */
+/** 通过后端中转取行情（推荐路径）。返回 {bars, name, market} */
 function fetchViaBackend(code, market) {
   return req.request('/api/kline', { code: code, market: market })
     .then(function (j) {
-      if (j && j.ok && j.bars && j.bars.length) return dropInvalid(j.bars);
-      throw new Error('后端未返回数据');
+      if (j && j.ok && j.bars && j.bars.length) {
+        return {
+          bars: dropInvalid(j.bars),
+          name: j.name || null,
+          market: (j.market == null ? guessMarket(code) : j.market)
+        };
+      }
+      throw new Error((j && j.error) || '后端未返回数据');
     });
 }
 
@@ -156,21 +188,25 @@ function fetchDirect(code, market) {
 /**
  * 取行情：先后端，后直连。
  * 后端可用时走后端（更快、有缓存）；后端不可用时尝试直连。
+ * 返回 { bars, name, market }。
  */
 function loadKline(code, market) {
-  const cacheKey = 'k_' + code + '_' + market;
+  const cacheKey = 'k_' + code + '_' + (market == null ? 'auto' : market);
   const cached = req.cacheGet(cacheKey);
   if (cached) return Promise.resolve(cached);
 
   return fetchViaBackend(code, market)
-    .then(function (bars) {
-      req.cacheSet(cacheKey, bars);
-      return bars;
+    .then(function (res) {
+      req.cacheSet(cacheKey, res);
+      return res;
     })
     .catch(function () {
-      return fetchDirect(code, market).then(function (bars) {
-        req.cacheSet(cacheKey, bars);
-        return bars;
+      const mk = (market == null ? guessMarket(code) : market);
+      if (mk == null) throw new Error('无法识别 ' + code + ' 的交易所');
+      return fetchDirect(code, mk).then(function (bars) {
+        const res = { bars: bars, name: null, market: mk };
+        req.cacheSet(cacheKey, res);
+        return res;
       });
     });
 }
@@ -185,10 +221,60 @@ function loadSymbols() {
     .catch(function () { return SYMBOLS; });
 }
 
+/**
+ * 查询任意代码：返回 { code, name, market }。
+ * 后端 /api/kline 会按代码段推断交易所，并返回真实名称。
+ */
+function queryCode(raw) {
+  const code = parseCode(raw);
+  if (!code) return Promise.reject(new Error('代码格式不对，请输入 6 位数字'));
+
+  // 清单内的代码：直接给名称与市场，行情走 loadKline（带缓存）
+  const known = findSymbol(code);
+  if (known) {
+    return loadKline(code, known.market).then(function (res) {
+      return {
+        code: code,
+        name: known.name,
+        market: known.market,
+        bars: res.bars || []
+      };
+    });
+  }
+
+  // 清单外：走后端，一次请求同时拿到名称、市场与行情
+  return req.request('/api/kline', { code: code })
+    .then(function (j) {
+      if (!j || !j.ok) {
+        throw new Error((j && j.error) || ('查不到 ' + code));
+      }
+      return {
+        code: code,
+        name: j.name || code,
+        market: (j.market == null ? guessMarket(code) : j.market),
+        bars: dropInvalid(j.bars || [])
+      };
+    })
+    .catch(function (err) {
+      // 后端不可用时尝试直连，至少确认代码存在
+      const mk = guessMarket(code);
+      if (mk == null) throw err;
+      return fetchDirect(code, mk).then(function (bars) {
+        if (!bars || bars.length < 60) {
+          throw new Error('查不到 ' + code + ' 的行情数据');
+        }
+        return { code: code, name: code, market: mk, bars: bars };
+      });
+    });
+}
+
 module.exports = {
   SYMBOLS: SYMBOLS,
   findSymbol: findSymbol,
+  guessMarket: guessMarket,
+  parseCode: parseCode,
   loadKline: loadKline,
   loadSymbols: loadSymbols,
+  queryCode: queryCode,
   dropInvalid: dropInvalid
 };

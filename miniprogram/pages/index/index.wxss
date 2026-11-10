@@ -28,3 +28,48 @@
   color: var(--txt-3);
   line-height: 1.7;
 }
+
+/* ---- 代码输入 ---- */
+.code-row {
+  display: flex;
+  align-items: center;
+  margin-top: 16rpx;
+}
+
+.code-input {
+  flex: 1;
+  background: var(--bg);
+  border: 1rpx solid var(--line-2);
+  border-radius: 12rpx;
+  padding: 18rpx 20rpx;
+  font-size: 28rpx;
+  color: var(--txt);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  margin-right: 16rpx;
+  height: 88rpx;
+}
+
+.btn-small {
+  background: var(--card-h);
+  border: 1rpx solid var(--line-2);
+  border-radius: 12rpx;
+  color: var(--txt);
+  font-size: 26rpx;
+  line-height: 86rpx;
+  height: 88rpx;
+  width: 130rpx;
+  padding: 0;
+  margin: 0;
+}
+
+.btn-small::after { border: none; }
+
+.code-hint {
+  font-size: 23rpx;
+  color: var(--txt-3);
+  margin-top: 12rpx;
+}
+
+.code-hint.ok { color: var(--accent-2); }
+.code-hint.err { color: var(--up); }
+

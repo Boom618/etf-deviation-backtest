@@ -115,6 +115,22 @@ input[type=number] { -moz-appearance: textfield; }
 input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 input:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(56, 139, 253, .15); }
 select { cursor: pointer; font-family: inherit; }
+
+/* ---- 代码输入框 ---- */
+.code-input-row {
+  display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center;
+  margin-top: 8px;
+}
+.code-input {
+  width: 100%; padding: 8px 10px; border-radius: 8px;
+  background: var(--bg); border: 1px solid var(--line-2); color: var(--txt);
+  font-family: var(--mono); font-size: 13px; outline: none; transition: .15s;
+}
+.code-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(56, 139, 253, .15); }
+.btn.small { padding: 8px 12px; font-size: 12px; white-space: nowrap; }
+.code-hint { font-size: 11px; margin-top: 6px; min-height: 14px; color: var(--txt-3); }
+.code-hint.ok { color: var(--accent-2); }
+.code-hint.err { color: var(--up); }
 select option { background: var(--card); }
 
 .row2 { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 6px; }
@@ -376,6 +392,8 @@ body { overscroll-behavior-y: none; }
   .btn { padding: 10px 16px; min-height: 42px; }
   .btn.block { min-height: 48px; }
   input[type=date], input[type=number], select { min-height: 44px; font-size: 16px; }  /* 16px 防 iOS 聚焦缩放 */
+  .code-input { min-height: 44px; font-size: 16px; }
+  .btn.small { min-height: 44px; padding: 10px 16px; }
   input[type=range] { height: 6px; }
   input[type=range]::-webkit-slider-thumb { width: 24px; height: 24px; }
   .chips button, .presets button { min-height: 40px; }

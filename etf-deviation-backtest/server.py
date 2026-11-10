@@ -52,14 +52,14 @@ def api_symbols(qs, body):
 
 def api_backtest(qs, body):
     src = _flat(body if body else qs)
-    code = src.get("code", "510500")
+    code = str(src.get("code") or "510500").strip()
     market = src.get("market")
-    if market in (None, "", "1", 1):
+    if market in ("1", 1):
         market = 1
     elif market in ("0", 0):
         market = 0
     else:
-        market = int(market)
+        market = None      # 交由 fetch_kline 按代码段推断
 
     symbol = next((s for s in data_source.SYMBOLS if s["code"] == code), None)
     if symbol:
@@ -136,7 +136,7 @@ def api_backtest(qs, body):
 
     result["ok"] = True
     result["symbol"] = {"code": code, "name": meta.get("name") or code,
-                        "market": market}
+                        "market": meta.get("market", market)}
     result["params"] = {"start": start, "end": end, "ma_period": ma_period,
                         "buy_dev": buy_dev, "sell_dev": sell_dev,
                         "capital": capital, "fee_rate": fee_rate,
@@ -179,19 +179,20 @@ def _lan_ip():
 
 
 def api_kline(qs, body):
-    """供前端直接拉取行情（浏览器场景走服务端代理，避免跨域）。"""
+    """供前端直接拉取行情（浏览器场景走服务端代理，避免跨域）。
+
+    支持清单外的任意代码：market 传空则按代码段自动推断交易所。
+    """
     src = _flat(body if body else qs)
-    code = src.get("code") or "510500"
+    code = str(src.get("code") or "510500").strip()
     market = src.get("market")
-    sym = next((s for s in data_source.SYMBOLS if s["code"] == code), None)
-    market = sym["market"] if sym else (1 if str(market) != "0" else 0)
 
     with _lock:
         try:
             meta, _ = data_source.fetch_kline(code, market)
         except Exception as e:
             return {"ok": False, "error": str(e)}
-    return {"ok": True, "code": code, "market": market,
+    return {"ok": True, "code": code, "market": meta.get("market"),
             "name": meta.get("name"), "source": meta.get("source"),
             "bars": meta["bars"]}
 

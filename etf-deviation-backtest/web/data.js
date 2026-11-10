@@ -37,6 +37,31 @@
     return null;
   }
 
+  // 按代码段推断交易所。1 = 上交所，0 = 深交所。
+  // 与后端 data_source.guess_market 规则一致。
+  var SH_PREFIX = ['600', '601', '603', '605', '688', '689', '900', '730', '780', '787'];
+  var SZ_PREFIX = ['000', '001', '002', '003', '300', '301', '200', '159', '160', '161',
+    '162', '163', '164', '165', '166', '167', '168', '169', '170', '171'];
+
+  function guessMarket(code) {
+    var c = String(code || '').trim();
+    if (c.length !== 6 || !/^\d{6}$/.test(c)) return null;
+    var p3 = c.slice(0, 3);
+    if (SH_PREFIX.indexOf(p3) >= 0) return 1;
+    if (SZ_PREFIX.indexOf(p3) >= 0) return 0;
+    if (c[0] === '5') return 1;   // 沪市 ETF / LOF
+    if (c[0] === '1') return 0;   // 深市 ETF / LOF
+    if (c.slice(0, 2) === '39') return 0;   // 深证指数
+    return null;
+  }
+
+  // 解析用户输入的代码，支持 600519 / sh600519 / 600519.sh
+  function parseCode(raw) {
+    var m = String(raw || '').trim().toLowerCase()
+      .match(/^(sh|sz)?(\d{6})(\.(sh|sz))?$/);
+    return m ? m[2] : null;
+  }
+
   function prevDay(dateStr) {
     var d = new Date(dateStr + 'T00:00:00Z');
     d.setUTCDate(d.getUTCDate() - 1);
@@ -137,20 +162,34 @@
   }
 
   // 优先服务端代理（浏览器场景），失败再直连（App 场景）
+  // 返回 { bars, name, market }
   function loadKline(code, market) {
     return fetch('/api/kline?code=' + encodeURIComponent(code) + '&market=' + market)
       .then(function (r) { return r.json(); })
       .then(function (j) {
-        if (j && j.ok && j.bars && j.bars.length) return dropInvalid(j.bars);
+        if (j && j.ok && j.bars && j.bars.length) {
+          return {
+            bars: dropInvalid(j.bars),
+            name: j.name || null,
+            market: (j.market == null ? guessMarket(code) : j.market)
+          };
+        }
         throw new Error('proxy miss');
       })
-      .catch(function () { return fetchKline(code, market); });
+      .catch(function () {
+        return fetchKline(code, market).then(function (bars) {
+          return { bars: bars, name: null, market: market };
+        });
+      });
   }
 
   global.DataSource = {
     SYMBOLS: SYMBOLS,
     findSymbol: findSymbol,
+    guessMarket: guessMarket,
+    parseCode: parseCode,
     loadKline: loadKline,
-    fetchKline: fetchKline
+    fetchKline: fetchKline,
+    dropInvalid: dropInvalid
   };
 })(window);

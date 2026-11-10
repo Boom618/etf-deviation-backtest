@@ -60,6 +60,7 @@
       sel.appendChild(og);
     });
     sel.value = '510500';
+    setCur('', '', null);
   }
 
   // -------------------------------------------------- 双向绑定滑块 <-> 数字
@@ -79,13 +80,63 @@
   // -------------------------------------------------- 读取参数
   // 买入偏离率为负数（-4 表示 dev <= -4% 买入），卖出为正数。
   // 归一化：买入若误填正数则自动取负，卖出若误填负数则取绝对值。
+  // -------------------------------------------------- 当前标的
+  // CUR.code 为空时表示「跟随下拉框选中的项」；手动输入代码后置为该代码。
+  var CUR = { code: '', name: '', market: null };
+
+  function setCur(code, name, market) {
+    CUR.code = code || '';
+    CUR.name = name || '';
+    CUR.market = (market == null ? null : market);
+  }
+
+  /** 输入代码查询：先问后端要名称与市场，再切过去 */
+  function lookupCode(raw) {
+    var code = String(raw || '').trim().toLowerCase();
+    // 允许 600519 / sh600519 / 600519.sh 几种写法
+    var m = code.match(/^(sh|sz)?(\d{6})(\.(sh|sz))?$/);
+    if (!m) {
+      setCodeHint('代码格式不对，请输入 6 位数字', true);
+      return;
+    }
+    code = m[2];
+    var hint = $('codeHint');
+    hint.textContent = '查询中…';
+    hint.classList.remove('err', 'ok');
+
+    fetch('/api/kline?code=' + encodeURIComponent(code))
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!d.ok) {
+          setCodeHint(d.error || ('查不到 ' + code), true);
+          return;
+        }
+        setCur(code, d.name || code, d.market);
+        // 若该代码在清单里，把下拉框也同步过去
+        var opt = $('symbol').querySelector('option[value="' + code + '"]');
+        if (opt) $('symbol').value = code;
+        setCodeHint(code + '　' + (d.name || ''), false);
+        run();
+      })
+      .catch(function (e) {
+        setCodeHint('查询失败：' + e.message, true);
+      });
+  }
+
+  function setCodeHint(text, isErr) {
+    var hint = $('codeHint');
+    hint.textContent = text || '';
+    hint.classList.toggle('err', !!isErr);
+    hint.classList.toggle('ok', !!text && !isErr);
+  }
+
   function params() {
     var buy = parseFloat($('buy').value);
     var sell = parseFloat($('sell').value);
     if (!isFinite(buy) || buy === 0) buy = -4;
     if (!isFinite(sell) || sell === 0) sell = 5;
     return {
-      code: $('symbol').value,
+      code: CUR.code || $('symbol').value,
       start: $('start').value || '2015-01-01',
       end: $('end').value || today(),
       ma_period: parseInt($('ma').value, 10) || 20,
@@ -119,6 +170,18 @@
 
     $('btnRun').addEventListener('click', run);
     $('btnRun2').addEventListener('click', function () { closeDrawer(); run(); });
+
+    // 手动输入代码查询
+    $('btnCode').addEventListener('click', function () { lookupCode($('codeInput').value); });
+    $('codeInput').addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); lookupCode(this.value); }
+    });
+    // 下拉框改变后，放弃手动输入的代码
+    $('symbol').addEventListener('change', function () {
+      setCur('', '', null);
+      $('codeInput').value = '';
+      setCodeHint('', false);
+    });
 
     $('btnParams').addEventListener('click', openDrawer);
     $('btnParams2').addEventListener('click', openDrawer);
@@ -207,9 +270,11 @@
       toast('回测失败：' + (apiErr ? apiErr.message : '引擎未加载'));
       return Promise.resolve();
     }
-    var sym = window.DataSource.findSymbol(p.code) || { code: p.code, market: 1, name: p.code };
+    var sym = window.DataSource.findSymbol(p.code)
+      || { code: p.code, market: window.DataSource.guessMarket(p.code), name: p.code };
     return window.DataSource.loadKline(p.code, sym.market)
-      .then(function (bars) {
+      .then(function (res) {
+        var bars = res.bars || [];
         // 均线预热：向前多取一段，统计时再裁掉
         var pad = Math.floor(p.ma_period * 1.6) + 30;
         var si = 0;
@@ -230,7 +295,11 @@
           full_position: p.full_position, report_start: p.start
         });
         if (r.error) throw new Error(r.error);
-        r.symbol = { code: sym.code, name: sym.name, market: sym.market };
+        r.symbol = {
+          code: p.code,
+          name: (res.name || sym.name || p.code),
+          market: (res.market == null ? sym.market : res.market)
+        };
         r.params = p;
         r.cached = true;
         r.source = 'local';

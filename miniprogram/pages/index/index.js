@@ -50,6 +50,11 @@ Page({
     warnings: [],
     windowLabel: '',
 
+    // 代码输入
+    codeInput: '',
+    codeHint: '',
+    codeHintCls: '',
+
     // 图表 tooltip
     tip: null,
     tipVisible: false
@@ -126,7 +131,57 @@ Page({
 
   // ------------------------------------------------------------ 交互
   onSymbolChange(e) {
-    this.setData({ symbolIndex: parseInt(e.detail.value, 10) });
+    const idx = parseInt(e.detail.value, 10);
+    // 换回下拉框选中的项，清掉手动输入的代码
+    this.setData({
+      symbolIndex: idx,
+      codeInput: '',
+      codeHint: '',
+      codeHintCls: ''
+    });
+    this._custom = null;
+  },
+
+  onCodeInput(e) {
+    this.setData({ codeInput: e.detail.value });
+  },
+
+  /** 查询输入的代码 */
+  onCodeQuery() {
+    const raw = this.data.codeInput;
+    if (!raw || !raw.trim()) {
+      this.setData({ codeHint: '请输入代码', codeHintCls: 'err' });
+      return;
+    }
+    if (this._querying) return;
+    this._querying = true;
+    this.setData({ codeHint: '查询中…', codeHintCls: '' });
+
+    data.queryCode(raw)
+      .then((info) => {
+        // 若该代码在清单里，把 picker 也同步过去
+        let idx = -1;
+        this.data.symbols.forEach((s, i) => {
+          if (s.code === info.code) idx = i;
+        });
+        this._custom = info;
+        this.setData({
+          symbolIndex: idx >= 0 ? idx : this.data.symbolIndex,
+          codeInput: info.code,
+          codeHint: info.code + '　' + (info.name || ''),
+          codeHintCls: 'ok'
+        });
+        this._doRun(info);
+      })
+      .catch((e) => {
+        this.setData({
+          codeHint: req.friendlyError(e),
+          codeHintCls: 'err'
+        });
+      })
+      .then(() => {
+        this._querying = false;
+      });
   },
 
   onMaChange(e) {
@@ -181,17 +236,23 @@ Page({
 
   // ------------------------------------------------------------ 回测
   run() {
-    if (this._running) return;
-    this._running = true;
-    this.setData({ loading: true, loadingText: '获取行情' });
-
+    // 若之前手动查询过代码，继续用它
+    if (this._custom) {
+      this._doRun(this._custom);
+      return;
+    }
     const sym = this.data.symbols[this.data.symbolIndex];
     if (!sym) {
-      this._running = false;
-      this.setData({ loading: false });
       wx.showToast({ title: '请先选择标的', icon: 'none' });
       return;
     }
+    this._doRun(sym);
+  },
+
+  _doRun(sym) {
+    if (this._running) return;
+    this._running = true;
+    this.setData({ loading: true, loadingText: '获取行情' });
 
     const p = {
       code: sym.code,
@@ -207,8 +268,9 @@ Page({
     };
 
     data.loadKline(p.code, p.market)
-      .then((bars) => {
+      .then((res) => {
         this.setData({ loadingText: '计算回测' });
+        const bars = res.bars || [];
         // 均线预热：向前多取一段，统计时再裁掉
         const pad = Math.floor(p.ma_period * 1.6) + 30;
         let si = 0;
@@ -234,7 +296,12 @@ Page({
         });
         if (r.error) throw new Error(r.error);
 
-        r.symbol = sym;
+        // 名称优先用后端返回的真实名称（清单外代码只有这里有）
+        r.symbol = {
+          code: p.code,
+          name: (res.name || sym.name || p.code),
+          market: (res.market == null ? p.market : res.market)
+        };
         r.params = p;
         this._render(r);
 

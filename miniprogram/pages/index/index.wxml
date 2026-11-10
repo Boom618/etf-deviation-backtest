@@ -13,6 +13,11 @@
         <text class="picker-arrow">▾</text>
       </view>
     </picker>
+    <view class="code-row">
+      <input class="code-input" type="text" placeholder="或输入代码，如 600519" maxlength="10" value="{{codeInput}}" bindinput="onCodeInput" bindconfirm="onCodeQuery" />
+      <button class="btn-small" bindtap="onCodeQuery">查询</button>
+    </view>
+    <view class="code-hint {{codeHintCls}}" wx:if="{{codeHint}}">{{codeHint}}</view>
   </view>
 
   <!-- 回测区间 -->

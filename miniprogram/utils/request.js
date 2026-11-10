@@ -19,9 +19,19 @@ function request(path, data, opt) {
   opt = opt || {};
   const cfg = app.globalData.config;
 
+  // 显式拼接 query string，不依赖 wx.request 自动拼接 data 的行为
+  let url = cfg.baseUrl + path;
+  const qs = [];
+  Object.keys(data || {}).forEach(function (k) {
+    const v = data[k];
+    if (v === undefined || v === null || v === '') return;
+    qs.push(encodeURIComponent(k) + '=' + encodeURIComponent(v));
+  });
+  if (qs.length) url += (url.indexOf('?') >= 0 ? '&' : '?') + qs.join('&');
+
   return new Promise((resolve, reject) => {
     wx.request({
-      url: cfg.baseUrl + path,
+      url: url,
       data: data || {},
       method: opt.method || 'GET',
       timeout: opt.timeout || 20000,
