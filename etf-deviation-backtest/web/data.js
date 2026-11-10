@@ -13,22 +13,6 @@
   // 与 Python data_source.py 的 SYMBOLS 保持一致
   var SYMBOLS = [
     { code: '510500', market: 1, name: '中证500ETF(南方)', cat: '宽基ETF' },
-    { code: '510300', market: 1, name: '沪深300ETF(华泰柏瑞)', cat: '宽基ETF' },
-    { code: '510050', market: 1, name: '上证50ETF(华夏)', cat: '宽基ETF' },
-    { code: '512100', market: 1, name: '中证1000ETF(南方)', cat: '宽基ETF' },
-    { code: '159915', market: 0, name: '创业板ETF(易方达)', cat: '宽基ETF' },
-    { code: '588000', market: 1, name: '科创50ETF(华夏)', cat: '宽基ETF' },
-    { code: '512880', market: 1, name: '证券ETF(国泰)', cat: '行业ETF' },
-    { code: '512690', market: 1, name: '酒ETF(鹏华)', cat: '行业ETF' },
-    { code: '512170', market: 1, name: '医疗ETF(华宝)', cat: '行业ETF' },
-    { code: '159928', market: 0, name: '消费ETF(汇添富)', cat: '行业ETF' },
-    { code: '518880', market: 1, name: '黄金ETF(华安)', cat: '商品' },
-    { code: '513100', market: 1, name: '纳指ETF(国泰)', cat: '海外' },
-    { code: '513500', market: 1, name: '标普500ETF(博时)', cat: '海外' },
-    { code: '000905', market: 1, name: '中证500指数', cat: '指数' },
-    { code: '000300', market: 1, name: '沪深300指数', cat: '指数' },
-    { code: '000001', market: 1, name: '上证指数', cat: '指数' },
-    { code: '399006', market: 0, name: '创业板指', cat: '指数' },
     { code: '600900', market: 1, name: '长江电力', cat: '个股' }
   ];
 
@@ -139,6 +123,27 @@
       .catch(function () { return []; });
   }
 
+  // ---------------------------------------------------------------- 名称查询
+  // 腾讯的 qt 接口是 GBK 编码，WebView 里用 TextDecoder('gbk') 不一定可靠，
+  // 所以 App 内直连场景改用东财的实时行情接口：UTF-8 且直接给出代码与名称。
+  var EM_QUOTE = 'https://push2.eastmoney.com/api/qt/stock/get';
+
+  function fetchName(code, market) {
+    var secid = market + '.' + code;
+    var url = EM_QUOTE + '?secid=' + secid +
+      '&fields=f57,f58,f107,f43,f169,f170';
+    return fetch(url, { cache: 'no-store' })
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        var d = j && j.data;
+        if (!d || !d.f58) return null;
+        // 校验代码一致，避免取到别的标的
+        if (String(d.f57) !== String(code)) return null;
+        return String(d.f58);
+      })
+      .catch(function () { return null; });
+  }
+
   // ---------------------------------------------------------------- 统一入口
   // 剔除价格非正或非有限的 bar（高分红标的早期前复权价可能为负）
   function dropInvalid(bars) {
@@ -177,8 +182,13 @@
         throw new Error('proxy miss');
       })
       .catch(function () {
+        // 直连路径（App 内无后端）：另外查一次名称
         return fetchKline(code, market).then(function (bars) {
-          return { bars: bars, name: null, market: market };
+          var known = findSymbol(code);
+          if (known) return { bars: bars, name: known.name, market: known.market };
+          return fetchName(code, market).then(function (nm) {
+            return { bars: bars, name: nm, market: market };
+          });
         });
       });
   }
@@ -190,6 +200,7 @@
     parseCode: parseCode,
     loadKline: loadKline,
     fetchKline: fetchKline,
+    fetchName: fetchName,
     dropInvalid: dropInvalid
   };
 })(window);

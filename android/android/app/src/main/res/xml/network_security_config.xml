@@ -7,6 +7,8 @@
     <domain-config cleartextTrafficPermitted="true">
         <domain includeSubdomains="true">web.ifzq.gtimg.cn</domain>
         <domain includeSubdomains="true">push2his.eastmoney.com</domain>
+        <!-- 东财实时行情：用于按代码查股票名称（UTF-8，无需 GBK 解码） -->
+        <domain includeSubdomains="true">push2.eastmoney.com</domain>
         <domain includeSubdomains="true">qt.gtimg.cn</domain>
         <domain includeSubdomains="true">money.finance.sina.com.cn</domain>
     </domain-config>

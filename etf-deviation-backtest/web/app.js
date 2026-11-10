@@ -104,18 +104,28 @@
     hint.textContent = '查询中…';
     hint.classList.remove('err', 'ok');
 
+    // 先问后端（拿得到名称最准），失败则直连行情接口（App 内无后端）
     fetch('/api/kline?code=' + encodeURIComponent(code))
       .then(function (r) { return r.json(); })
       .then(function (d) {
-        if (!d.ok) {
-          setCodeHint(d.error || ('查不到 ' + code), true);
-          return;
-        }
-        setCur(code, d.name || code, d.market);
+        if (!d.ok) throw new Error(d.error || ('查不到 ' + code));
+        return { code: code, name: d.name || code, market: d.market };
+      })
+      .catch(function () {
+        if (!window.DataSource) throw new Error('查不到 ' + code);
+        var known = window.DataSource.findSymbol(code);
+        var mk = known ? known.market : window.DataSource.guessMarket(code);
+        if (mk == null) throw new Error('无法识别 ' + code + ' 的交易所');
+        return window.DataSource.fetchName(code, mk).then(function (nm) {
+          return { code: code, name: nm || (known ? known.name : code), market: mk };
+        });
+      })
+      .then(function (info) {
+        setCur(info.code, info.name, info.market);
         // 若该代码在清单里，把下拉框也同步过去
-        var opt = $('symbol').querySelector('option[value="' + code + '"]');
-        if (opt) $('symbol').value = code;
-        setCodeHint(code + '　' + (d.name || ''), false);
+        var opt = $('symbol').querySelector('option[value="' + info.code + '"]');
+        if (opt) $('symbol').value = info.code;
+        setCodeHint(info.code + '　' + (info.name || ''), false);
         run();
       })
       .catch(function (e) {

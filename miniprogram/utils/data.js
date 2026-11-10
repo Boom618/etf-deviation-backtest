@@ -17,22 +17,6 @@ const EM = 'https://push2his.eastmoney.com/api/qt/stock/kline/get';
 // 标的清单（与后端 data_source.py 的 SYMBOLS 保持一致）
 const SYMBOLS = [
   { code: '510500', market: 1, name: '中证500ETF(南方)', cat: '宽基ETF' },
-  { code: '510300', market: 1, name: '沪深300ETF(华泰柏瑞)', cat: '宽基ETF' },
-  { code: '510050', market: 1, name: '上证50ETF(华夏)', cat: '宽基ETF' },
-  { code: '512100', market: 1, name: '中证1000ETF(南方)', cat: '宽基ETF' },
-  { code: '159915', market: 0, name: '创业板ETF(易方达)', cat: '宽基ETF' },
-  { code: '588000', market: 1, name: '科创50ETF(华夏)', cat: '宽基ETF' },
-  { code: '512880', market: 1, name: '证券ETF(国泰)', cat: '行业ETF' },
-  { code: '512690', market: 1, name: '酒ETF(鹏华)', cat: '行业ETF' },
-  { code: '512170', market: 1, name: '医疗ETF(华宝)', cat: '行业ETF' },
-  { code: '159928', market: 0, name: '消费ETF(汇添富)', cat: '行业ETF' },
-  { code: '518880', market: 1, name: '黄金ETF(华安)', cat: '商品' },
-  { code: '513100', market: 1, name: '纳指ETF(国泰)', cat: '海外' },
-  { code: '513500', market: 1, name: '标普500ETF(博时)', cat: '海外' },
-  { code: '000905', market: 1, name: '中证500指数', cat: '指数' },
-  { code: '000300', market: 1, name: '沪深300指数', cat: '指数' },
-  { code: '000001', market: 1, name: '上证指数', cat: '指数' },
-  { code: '399006', market: 0, name: '创业板指', cat: '指数' },
   { code: '600900', market: 1, name: '长江电力', cat: '个股' }
 ];
 
@@ -222,6 +206,25 @@ function loadSymbols() {
 }
 
 /**
+ * 直连查名称（后端不可用时的兜底）。
+ * 用东财的实时行情接口：UTF-8 编码，WebView 里不用做 GBK 解码。
+ */
+function fetchName(code, market) {
+  const url = 'https://push2.eastmoney.com/api/qt/stock/get' +
+    '?secid=' + market + '.' + code +
+    '&fields=f57,f58,f107,f43,f169,f170';
+  return req.request(url, null, { method: 'GET' })
+    .then(function (j) {
+      const d = j && j.data;
+      if (!d || !d.f58) return null;
+      // 校验代码一致，避免取到别的标的
+      if (String(d.f57) !== String(code)) return null;
+      return String(d.f58);
+    })
+    .catch(function () { return null; });
+}
+
+/**
  * 查询任意代码：返回 { code, name, market }。
  * 后端 /api/kline 会按代码段推断交易所，并返回真实名称。
  */
@@ -263,7 +266,9 @@ function queryCode(raw) {
         if (!bars || bars.length < 60) {
           throw new Error('查不到 ' + code + ' 的行情数据');
         }
-        return { code: code, name: code, market: mk, bars: bars };
+        return fetchName(code, mk).then(function (nm) {
+          return { code: code, name: nm || code, market: mk, bars: bars };
+        });
       });
     });
 }
@@ -276,5 +281,6 @@ module.exports = {
   loadKline: loadKline,
   loadSymbols: loadSymbols,
   queryCode: queryCode,
+  fetchName: fetchName,
   dropInvalid: dropInvalid
 };

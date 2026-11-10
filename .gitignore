@@ -46,3 +46,6 @@ npm-debug.log*
 # 中文名副本仅作本地备份，内容完全相同，不重复入库。
 release/*.apk
 !release/deviation-backtest-*.apk
+
+# 微信开发者工具的本地配置（含本机 AppID 等，不入库）
+miniprogram/project.private.config.json

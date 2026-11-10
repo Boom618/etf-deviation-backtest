@@ -1,7 +1,7 @@
 {
   "description": "ETF 偏离率回测小程序",
   "miniprogramRoot": "./",
-  "appid": "touristappid",
+  "appid": "wx2cb35d567f570029",
   "projectname": "deviation-backtest-mp",
   "setting": {
     "urlCheck": false,
@@ -23,7 +23,23 @@
       "ignore": [],
       "disablePlugins": [],
       "outputPath": ""
-    }
+    },
+    "compileWorklet": false,
+    "packNpmManually": false,
+    "packNpmRelationList": [],
+    "minifyWXSS": true,
+    "minifyWXML": true,
+    "localPlugins": false,
+    "disableUseStrict": false,
+    "useCompilerPlugins": false,
+    "condition": false
   },
-  "condition": {}
+  "condition": {},
+  "compileType": "miniprogram",
+  "simulatorPluginLibVersion": {},
+  "packOptions": {
+    "ignore": [],
+    "include": []
+  },
+  "editorSetting": {}
 }

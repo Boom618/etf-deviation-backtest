@@ -32,22 +32,6 @@ HEADERS = {
 # ---------------------------------------------------------------- 标的清单
 SYMBOLS = [
     {"code": "510500", "market": 1, "name": "中证500ETF(南方)", "cat": "宽基ETF"},
-    {"code": "510300", "market": 1, "name": "沪深300ETF(华泰柏瑞)", "cat": "宽基ETF"},
-    {"code": "510050", "market": 1, "name": "上证50ETF(华夏)", "cat": "宽基ETF"},
-    {"code": "512100", "market": 1, "name": "中证1000ETF(南方)", "cat": "宽基ETF"},
-    {"code": "159915", "market": 0, "name": "创业板ETF(易方达)", "cat": "宽基ETF"},
-    {"code": "588000", "market": 1, "name": "科创50ETF(华夏)", "cat": "宽基ETF"},
-    {"code": "512880", "market": 1, "name": "证券ETF(国泰)", "cat": "行业ETF"},
-    {"code": "512690", "market": 1, "name": "酒ETF(鹏华)", "cat": "行业ETF"},
-    {"code": "512170", "market": 1, "name": "医疗ETF(华宝)", "cat": "行业ETF"},
-    {"code": "159928", "market": 0, "name": "消费ETF(汇添富)", "cat": "行业ETF"},
-    {"code": "518880", "market": 1, "name": "黄金ETF(华安)", "cat": "商品"},
-    {"code": "513100", "market": 1, "name": "纳指ETF(国泰)", "cat": "海外"},
-    {"code": "513500", "market": 1, "name": "标普500ETF(博时)", "cat": "海外"},
-    {"code": "000905", "market": 1, "name": "中证500指数", "cat": "指数"},
-    {"code": "000300", "market": 1, "name": "沪深300指数", "cat": "指数"},
-    {"code": "000001", "market": 1, "name": "上证指数", "cat": "指数"},
-    {"code": "399006", "market": 0, "name": "创业板指", "cat": "指数"},
     {"code": "600900", "market": 1, "name": "长江电力", "cat": "个股"},
 ]
 
