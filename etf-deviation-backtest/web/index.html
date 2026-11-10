@@ -48,11 +48,10 @@
     </div>
 
     <div class="field" data-page-node-id="gGpACg95kVHoG4exmWwu7Y">
-      <label for="symbol" data-page-node-id="EeO5WxEGmvOpnIQRZF82aH">标的</label>
-      <select id="symbol" data-page-node-id="IAxJZl6z7G5tODtNlTZpVK"></select>
+      <label for="codeInput" data-page-node-id="EeO5WxEGmvOpnIQRZF82aH">股票代码</label>
       <div class="code-input-row" data-page-node-id="codeRow">
-        <input type="text" id="codeInput" class="code-input" placeholder="或输入代码，如 600519" maxlength="10" autocomplete="off" data-page-node-id="codeInput">
-        <button class="btn small" id="btnCode" data-page-node-id="btnCode">查询</button>
+        <input type="text" id="codeInput" class="code-input" placeholder="6 位数字代码，如 600519" maxlength="6" inputmode="numeric" pattern="[0-9]*" autocomplete="off" value="510500" data-page-node-id="codeInput">
+        <button class="btn small" id="btnCode" type="button" data-page-node-id="btnCode">查询</button>
       </div>
       <div class="code-hint" id="codeHint" data-page-node-id="codeHint"></div>
     </div>

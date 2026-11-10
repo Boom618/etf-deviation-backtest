@@ -43,26 +43,6 @@
     });
   }
 
-  // -------------------------------------------------- 初始化标的
-  function initSymbols(list) {
-    var sel = $('symbol'), groups = {};
-    list.forEach(function (s) { (groups[s.cat || '其他'] = groups[s.cat || '其他'] || []).push(s); });
-    sel.innerHTML = '';
-    Object.keys(groups).forEach(function (cat) {
-      var og = document.createElement('optgroup');
-      og.label = cat;
-      groups[cat].forEach(function (s) {
-        var o = document.createElement('option');
-        o.value = s.code;
-        o.textContent = s.code + '  ' + s.name;
-        og.appendChild(o);
-      });
-      sel.appendChild(og);
-    });
-    sel.value = '510500';
-    setCur('', '', null);
-  }
-
   // -------------------------------------------------- 双向绑定滑块 <-> 数字
   // negate=true 时用于买入偏离率：滑块为负区间，数字框输入正数会自动转负。
   function bindPair(rangeId, numId, negate) {
@@ -81,7 +61,8 @@
   // 买入偏离率为负数（-4 表示 dev <= -4% 买入），卖出为正数。
   // 归一化：买入若误填正数则自动取负，卖出若误填负数则取绝对值。
   // -------------------------------------------------- 当前标的
-  // CUR.code 为空时表示「跟随下拉框选中的项」；手动输入代码后置为该代码。
+  // CUR.code 为空时表示「尚未查询过」，用输入框里的代码；
+  // 查询成功后固定为该代码，直到用户改了输入框。
   var CUR = { code: '', name: '', market: null };
 
   function setCur(code, name, market) {
@@ -90,19 +71,22 @@
     CUR.market = (market == null ? null : market);
   }
 
-  /** 输入代码查询：先问后端要名称与市场，再切过去 */
+  /** 只保留数字，最多 6 位 */
+  function sanitizeCode(raw) {
+    return String(raw || '').replace(/\D/g, '').slice(0, 6);
+  }
+
+  /** 查询输入的代码：先问后端要名称与市场，再切过去 */
   function lookupCode(raw) {
-    var code = String(raw || '').trim().toLowerCase();
-    // 允许 600519 / sh600519 / 600519.sh 几种写法
-    var m = code.match(/^(sh|sz)?(\d{6})(\.(sh|sz))?$/);
-    if (!m) {
-      setCodeHint('代码格式不对，请输入 6 位数字', true);
+    var code = sanitizeCode(raw);
+    if (code.length !== 6) {
+      setCodeHint('请输入 6 位数字代码', true);
       return;
     }
-    code = m[2];
     var hint = $('codeHint');
     hint.textContent = '查询中…';
     hint.classList.remove('err', 'ok');
+    $('btnCode').classList.add('busy');
 
     // 先问后端（拿得到名称最准），失败则直连行情接口（App 内无后端）
     fetch('/api/kline?code=' + encodeURIComponent(code))
@@ -122,14 +106,14 @@
       })
       .then(function (info) {
         setCur(info.code, info.name, info.market);
-        // 若该代码在清单里，把下拉框也同步过去
-        var opt = $('symbol').querySelector('option[value="' + info.code + '"]');
-        if (opt) $('symbol').value = info.code;
         setCodeHint(info.code + '　' + (info.name || ''), false);
         run();
       })
       .catch(function (e) {
         setCodeHint('查询失败：' + e.message, true);
+      })
+      .then(function () {
+        $('btnCode').classList.remove('busy');
       });
   }
 
@@ -146,7 +130,7 @@
     if (!isFinite(buy) || buy === 0) buy = -4;
     if (!isFinite(sell) || sell === 0) sell = 5;
     return {
-      code: CUR.code || $('symbol').value,
+      code: CUR.code || sanitizeCode($('codeInput').value) || '510500',
       start: $('start').value || '2015-01-01',
       end: $('end').value || today(),
       ma_period: parseInt($('ma').value, 10) || 20,
@@ -181,16 +165,32 @@
     $('btnRun').addEventListener('click', run);
     $('btnRun2').addEventListener('click', function () { closeDrawer(); run(); });
 
-    // 手动输入代码查询
-    $('btnCode').addEventListener('click', function () { lookupCode($('codeInput').value); });
-    $('codeInput').addEventListener('keydown', function (e) {
-      if (e.key === 'Enter') { e.preventDefault(); lookupCode(this.value); }
+    // 代码输入：只允许数字，最多 6 位
+    var codeInput = $('codeInput');
+    codeInput.addEventListener('input', function () {
+      var clean = sanitizeCode(this.value);
+      if (clean !== this.value) {
+        var pos = this.selectionStart;
+        this.value = clean;
+        try { this.setSelectionRange(pos - 1, pos - 1); } catch (e) { /* 忽略 */ }
+      }
+      // 改了输入就清掉旧的查询结果，下次回测用新代码
+      if (CUR.code && CUR.code !== clean) {
+        setCur('', '', null);
+        setCodeHint('', false);
+      }
     });
-    // 下拉框改变后，放弃手动输入的代码
-    $('symbol').addEventListener('change', function () {
-      setCur('', '', null);
-      $('codeInput').value = '';
-      setCodeHint('', false);
+    // 粘贴时也过滤
+    codeInput.addEventListener('paste', function (e) {
+      e.preventDefault();
+      var text = (e.clipboardData || window.clipboardData).getData('text') || '';
+      var clean = sanitizeCode(text);
+      this.value = clean;
+      this.dispatchEvent(new Event('input'));
+    });
+    $('btnCode').addEventListener('click', function () { lookupCode(codeInput.value); });
+    codeInput.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); lookupCode(this.value); }
     });
 
     $('btnParams').addEventListener('click', openDrawer);
@@ -245,7 +245,6 @@
     $('btnRefresh').addEventListener('click', refresh);
     $('btnRefreshM').addEventListener('click', function () { closeDrawer(); refresh(); });
 
-    $('symbol').addEventListener('change', function () { closeDrawer(); run(); });
     document.addEventListener('keydown', function (e) {
       if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') run();
     });
@@ -533,21 +532,10 @@
     registerSW();
     loadShareInfo();
 
-    // 优先用服务端标的清单；无后端时回退到内置清单（App 场景）
-    fetch('/api/symbols')
-      .then(function (r) { return r.json(); })
-      .then(function (d) { return d.symbols; })
-      .catch(function () {
-        return window.DataSource ? window.DataSource.SYMBOLS : [];
-      })
-      .then(function (list) {
-        if (!list || !list.length) throw new Error('标的清单为空');
-        initSymbols(list);
-        initCharts();
-        bindEvents();
-        return run();
-      })
-      .catch(function (e) { toast('初始化失败：' + e.message); loading(false); });
+    initCharts();
+    bindEvents();
+    // 默认标的 510500，直接查一次把名称也带出来
+    lookupCode('510500');
   }
 
   // 注册 Service Worker：支持添加到手机主屏、断网时仍能打开界面

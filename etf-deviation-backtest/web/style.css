@@ -73,12 +73,19 @@ button { cursor: pointer; border: none; background: none; }
   padding: 7px 14px; border-radius: 8px; font-size: 13px; font-weight: 500;
   border: 1px solid var(--line-2); background: var(--card); color: var(--txt-2);
   text-decoration: none; transition: .15s;
+  /* 重置浏览器原生按钮外观，否则点击获得焦点后会渲染成系统样式（浅色） */
+  appearance: none; -webkit-appearance: none;
+  display: inline-flex; align-items: center; justify-content: center;
 }
 .btn:hover { background: var(--card-h); color: var(--txt); border-color: rgba(255, 255, 255, .22); }
+.btn:active { background: var(--card); color: var(--txt-2); }
+.btn:focus { outline: none; }
+.btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .btn.primary {
   background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600;
 }
 .btn.primary:hover { background: #2f7ae5; border-color: #2f7ae5; }
+.btn.primary:active { background: var(--accent); border-color: var(--accent); color: #fff; }
 .btn.block { width: 100%; padding: 11px; margin-top: 4px; font-size: 14px; }
 .btn:disabled { opacity: .55; cursor: not-allowed; }
 
@@ -119,15 +126,22 @@ select { cursor: pointer; font-family: inherit; }
 /* ---- 代码输入框 ---- */
 .code-input-row {
   display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center;
-  margin-top: 8px;
 }
 .code-input {
-  width: 100%; padding: 8px 10px; border-radius: 8px;
+  width: 100%; padding: 9px 12px; border-radius: 8px;
   background: var(--bg); border: 1px solid var(--line-2); color: var(--txt);
-  font-family: var(--mono); font-size: 13px; outline: none; transition: .15s;
+  font-family: var(--mono); font-size: 15px; letter-spacing: 1px;
+  outline: none; transition: .15s;
 }
+.code-input::placeholder { color: var(--txt-3); letter-spacing: 0; font-size: 13px; }
 .code-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(56, 139, 253, .15); }
-.btn.small { padding: 8px 12px; font-size: 12px; white-space: nowrap; }
+.btn.small {
+  padding: 9px 16px; font-size: 13px; white-space: nowrap;
+  background: var(--accent); border-color: var(--accent); color: #fff;
+}
+.btn.small:hover { background: #2f7ae5; border-color: #2f7ae5; color: #fff; }
+.btn.small:active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn.small.busy { opacity: .6; pointer-events: none; }
 .code-hint { font-size: 11px; margin-top: 6px; min-height: 14px; color: var(--txt-3); }
 .code-hint.ok { color: var(--accent-2); }
 .code-hint.err { color: var(--up); }

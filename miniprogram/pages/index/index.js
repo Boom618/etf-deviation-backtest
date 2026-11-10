@@ -29,8 +29,6 @@ Page({
   data: {
     loading: false,
     loadingText: '加载中',
-    symbols: [],
-    symbolIndex: 0,
 
     // 参数
     maPeriod: 20,
@@ -51,9 +49,10 @@ Page({
     windowLabel: '',
 
     // 代码输入
-    codeInput: '',
+    codeInput: '510500',
     codeHint: '',
     codeHintCls: '',
+    busy: false,
 
     // 图表 tooltip
     tip: null,
@@ -75,7 +74,6 @@ Page({
     });
 
     this.charts = [];
-    this._loadSymbols();
   },
 
   onReady() {
@@ -84,21 +82,15 @@ Page({
       (this.charts || []).forEach(c => c.resize());
     };
     wx.onWindowResize(this._resizeHandler);
+    // 默认标的 510500，直接查一次把名称也带出来
+    this.onCodeQuery();
   },
 
   onUnload() {
     try { wx.offWindowResize(this._resizeHandler); } catch (e) { /* 忽略 */ }
   },
 
-  // ------------------------------------------------------------ 数据
-  _loadSymbols() {
-    data.loadSymbols().then((list) => {
-      this.setData({ symbols: list });
-    }).catch(() => {
-      wx.showToast({ title: '标的加载失败', icon: 'none' });
-    });
-  },
-
+  // ------------------------------------------------------------ 图表
   _initCharts() {
     const self = this;
     const tipHandler = (info) => {
@@ -130,43 +122,37 @@ Page({
   },
 
   // ------------------------------------------------------------ 交互
-  onSymbolChange(e) {
-    const idx = parseInt(e.detail.value, 10);
-    // 换回下拉框选中的项，清掉手动输入的代码
-    this.setData({
-      symbolIndex: idx,
-      codeInput: '',
-      codeHint: '',
-      codeHintCls: ''
-    });
-    this._custom = null;
-  },
-
+  /** 只保留数字，最多 6 位 */
   onCodeInput(e) {
-    this.setData({ codeInput: e.detail.value });
+    const clean = String(e.detail.value || '').replace(/\D/g, '').slice(0, 6);
+    this.setData({
+      codeInput: clean,
+      // 改了输入就清掉旧提示与旧查询结果
+      codeHint: (this._curCode && this._curCode !== clean) ? '' : this.data.codeHint,
+      codeHintCls: (this._curCode && this._curCode !== clean) ? '' : this.data.codeHintCls
+    });
+    if (this._curCode && this._curCode !== clean) {
+      this._curCode = '';
+      this._custom = null;
+    }
   },
 
   /** 查询输入的代码 */
   onCodeQuery() {
-    const raw = this.data.codeInput;
-    if (!raw || !raw.trim()) {
-      this.setData({ codeHint: '请输入代码', codeHintCls: 'err' });
+    const code = String(this.data.codeInput || '').replace(/\D/g, '').slice(0, 6);
+    if (code.length !== 6) {
+      this.setData({ codeHint: '请输入 6 位数字代码', codeHintCls: 'err' });
       return;
     }
     if (this._querying) return;
     this._querying = true;
-    this.setData({ codeHint: '查询中…', codeHintCls: '' });
+    this.setData({ codeHint: '查询中…', codeHintCls: '', busy: true });
 
-    data.queryCode(raw)
+    data.queryCode(code)
       .then((info) => {
-        // 若该代码在清单里，把 picker 也同步过去
-        let idx = -1;
-        this.data.symbols.forEach((s, i) => {
-          if (s.code === info.code) idx = i;
-        });
         this._custom = info;
+        this._curCode = info.code;
         this.setData({
-          symbolIndex: idx >= 0 ? idx : this.data.symbolIndex,
           codeInput: info.code,
           codeHint: info.code + '　' + (info.name || ''),
           codeHintCls: 'ok'
@@ -181,6 +167,7 @@ Page({
       })
       .then(() => {
         this._querying = false;
+        this.setData({ busy: false });
       });
   },
 
@@ -236,17 +223,13 @@ Page({
 
   // ------------------------------------------------------------ 回测
   run() {
-    // 若之前手动查询过代码，继续用它
+    // 若之前查询过代码，继续用它
     if (this._custom) {
       this._doRun(this._custom);
       return;
     }
-    const sym = this.data.symbols[this.data.symbolIndex];
-    if (!sym) {
-      wx.showToast({ title: '请先选择标的', icon: 'none' });
-      return;
-    }
-    this._doRun(sym);
+    // 否则用输入框里的代码（未查询过就现场查一次）
+    this.onCodeQuery();
   },
 
   _doRun(sym) {

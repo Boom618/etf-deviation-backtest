@@ -4,18 +4,12 @@
     <view class="loading-box">{{loadingText}}…</view>
   </view>
 
-  <!-- 标的 -->
+  <!-- 股票代码 -->
   <view class="card">
-    <view class="card-title">标的</view>
-    <picker mode="selector" range="{{symbols}}" range-key="name" value="{{symbolIndex}}" bindchange="onSymbolChange">
-      <view class="picker-box">
-        <text class="picker-val">{{symbols[symbolIndex].name || '加载中'}}</text>
-        <text class="picker-arrow">▾</text>
-      </view>
-    </picker>
+    <view class="card-title">股票代码</view>
     <view class="code-row">
-      <input class="code-input" type="text" placeholder="或输入代码，如 600519" maxlength="10" value="{{codeInput}}" bindinput="onCodeInput" bindconfirm="onCodeQuery" />
-      <button class="btn-small" bindtap="onCodeQuery">查询</button>
+      <input class="code-input" type="number" placeholder="6 位数字代码，如 600519" maxlength="6" value="{{codeInput}}" bindinput="onCodeInput" bindconfirm="onCodeQuery" />
+      <button class="btn-small {{busy ? 'busy' : ''}}" bindtap="onCodeQuery">查询</button>
     </view>
     <view class="code-hint {{codeHintCls}}" wx:if="{{codeHint}}">{{codeHint}}</view>
   </view>
