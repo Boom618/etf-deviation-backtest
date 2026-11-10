@@ -82,7 +82,7 @@ Windows 用户可直接双击 `启动.bat`。
 
 ```bash
 # 直接从仓库下载（v1.4.0）
-https://github.com/Boom618/etf-deviation-backtest/raw/main/release/deviation-backtest-v1.4.0.apk
+https://github.com/Boom618/etf-deviation-backtest/raw/master/release/deviation-backtest-v1.4.0.apk
 ```
 
 或克隆后取用：
