@@ -80,6 +80,8 @@ Windows 用户可直接双击 `启动.bat`。
 
 ### 方式三：桌面版（Windows / macOS，免安装）
 
+![桌面版界面](docs/images/desktop-windows.png)
+
 | 平台 | 产物 | 体积 |
 |------|------|------|
 | Windows 64 位 | `release/ETF回测工具-v1.4.0-win64.exe` | 17 MB |
