@@ -16,9 +16,10 @@ from urllib.parse import urlparse, parse_qs
 
 import data_source
 import backtest
+import runtime_paths
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-WEB_DIR = os.path.join(BASE_DIR, "web")
+BASE_DIR = runtime_paths.resource_dir()
+WEB_DIR = runtime_paths.web_dir()
 
 _lock = threading.Lock()
 
@@ -234,14 +235,25 @@ def api_qr(qs, body):
         return {"ok": False, "error": str(e), "url": url}
 
 
+class _Server(ThreadingHTTPServer):
+    """Windows 上 SO_REUSEADDR 会与已监听端口"共存"，导致请求被随机分发。
+    关掉它才能真实检测端口冲突；POSIX 上保留以便快速重启。"""
+
+    allow_reuse_address = (os.name != "nt")
+    daemon_threads = True
+
+
+def create_server(host="0.0.0.0", port=8770):
+    return _Server((host, port), Handler)
+
+
 def main():
     # 监听 0.0.0.0，手机 / 平板与本机处于同一 Wi-Fi 时可直接访问。
     # 端口优先取环境变量 PORT（部署环境注入），本地默认 8770。
     host = os.environ.get("HOST", "0.0.0.0")
     port = int(os.environ.get("PORT", "8770"))
 
-    srv = ThreadingHTTPServer((host, port), Handler)
-    srv.daemon_threads = True
+    srv = create_server(host, port)
 
     lan = _lan_ip()
     print("=" * 56)

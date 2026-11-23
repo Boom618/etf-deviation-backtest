@@ -16,7 +16,10 @@ import subprocess
 import time
 import urllib.request
 
-CACHE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cache")
+import runtime_paths
+
+# 源码运行写在项目目录；打包后落到用户数据目录（临时解压目录退出即清空）
+CACHE_DIR = os.environ.get("ETF_CACHE_DIR") or os.path.join(runtime_paths.data_dir(), "cache")
 os.makedirs(CACHE_DIR, exist_ok=True)
 
 UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
@@ -283,7 +286,7 @@ def fetch_kline(code, market=None, max_age=1800):
 
     if os.path.exists(path):
         try:
-            if time.time() - os.pathmtime(path) < max_age:
+            if time.time() - os.path.getmtime(path) < max_age:
                 with open(path, "r", encoding="utf-8") as f:
                     return json.load(f), True
         except Exception:

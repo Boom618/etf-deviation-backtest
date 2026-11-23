@@ -1,7 +1,9 @@
 # 偏离率回测系统
 
-用「价格相对均线的偏离率」触发买卖的 ETF / 指数策略回测工具。同一套代码，三种运行方式：
+用「价格相对均线的偏离率」触发买卖的 ETF / 指数策略回测工具。同一套代码，多种运行方式：
 
+- **Windows 桌面版** — 单个 exe，免安装，双击即用
+- **macOS 桌面版** — `.app`，拖进「应用程序」即可
 - **本机服务** — 零依赖，Python 3.8+ 直接跑，手机同 Wi-Fi 也能访问
 - **PWA 网页** — 可添加到手机主屏，像 App 一样全屏使用
 - **Android App** — 预编译 APK 直接安装
@@ -76,7 +78,25 @@ Windows 用户可直接双击 `启动.bat`。
 
 本机服务起一次后，手机浏览器打开局域网地址，菜单里选「添加到主屏幕」，之后可全屏运行。
 
-### 方式三：安装 Android App
+### 方式三：桌面版（Windows / macOS，免安装）
+
+| 平台 | 产物 | 体积 |
+|------|------|------|
+| Windows 64 位 | `release/ETF回测工具-v1.4.0-win64.exe` | 17 MB |
+| macOS | 由 GitHub Actions 构建（见下方说明） | ~30 MB |
+
+```bash
+# Windows 直接下载后双击，不用装 Python
+https://github.com/Boom618/etf-deviation-backtest/raw/master/release/ETF回测工具-v1.4.0-win64.exe
+```
+
+- **单文件、免安装**：拷到任意 Windows 10/11 电脑双击即可，不写注册表，卸载直接删文件
+- 窗口用系统自带 WebView2 渲染，和网页版完全同一套界面
+- 首次启动若被 SmartScreen 拦截：点「更多信息」→「仍要运行」（未做代码签名）
+- 行情缓存写在 `%LOCALAPPDATA%\ETFDviation\cache`，删掉不影响下次使用
+- 关闭窗口即退出；重复双击会把已有窗口调到前台，不会开第二个
+
+### 方式四：安装 Android App
 
 下载 `release/` 目录下的 APK 安装到手机即可（也可从 [Releases](https://github.com/Boom618/etf-deviation-backtest/releases) 页获取）。App 内置回测引擎，**不需要电脑提供服务**。
 
@@ -102,6 +122,14 @@ cd etf-deviation-backtest
 | 签名 | 已签名 release 包 |
 
 ### 更新日志
+
+**v1.4.0**
+- 新增：Windows 绿色版 exe 与 macOS `.app`（本机服务 + 原生窗口，免装 Python）
+- 新增：桌面端重复启动会激活已有窗口，不再开第二份
+- UI 改为「青商城」浅色风格（浅蓝灰底、白卡、蓝紫渐变主色）
+- 修复：窄屏下 X 轴日期标签重叠 / 首尾被裁
+- 修复：参数抽屉里日期输入框把右侧日历图标顶出边界
+- 修复：行情缓存过期判断写错函数名（`os.pathmtime`），导致缓存从未生效，每次都要重新联网抓取
 
 **v1.1.0**
 - 新增标的：长江电力（600900），归入「个股」分类
@@ -153,6 +181,11 @@ etf-deviation-backtest/
 ├── server.py           # HTTP 服务 + JSON API（标准库）
 ├── backtest.py         # 回测引擎（纯计算，零依赖）
 ├── data_source.py      # 行情抓取 + 多源容错 + 缓存
+├── desktop.py          # 桌面版入口（本机服务 + 原生窗口）
+├── runtime_paths.py    # 源码 / 打包两种形态的路径解析
+├── build_windows.bat   # Windows 单文件 exe 打包
+├── build_macos.sh      # macOS .app / .dmg 打包
+├── desktop/            # 桌面版图标资源
 └── web/                # 前端
     ├── index.html
     ├── style.css
@@ -210,6 +243,63 @@ curl "http://127.0.0.1:8770/api/backtest?code=510500&ma_period=20&buy_dev=-4&sel
 | `/api/clearcache` | POST | 清空行情缓存并重新拉取 |
 | `/api/info` | GET / POST | 返回本机局域网访问地址 |
 | `/api/qr` | GET / POST | 生成访问地址二维码（需 `pip install segno`） |
+
+---
+
+## 从源码构建桌面版
+
+桌面版本质是「本地 Python 服务 + 系统 WebView 外壳」，用 PyInstaller 打成单文件。
+
+| 文件 | 作用 |
+|------|------|
+| `desktop.py` | 入口：起本地服务、开原生窗口（pywebview），失败则回退默认浏览器 |
+| `runtime_paths.py` | 区分源码 / 打包两种形态的资源目录与可写数据目录 |
+| `desktop/icon.ico` | Windows 图标（16–256 多尺寸） |
+| `build_windows.bat` | Windows 一键打包 |
+| `build_macos.sh` | macOS 一键打包（含 icns 生成与 dmg 制作） |
+
+### Windows
+
+```bash
+build_windows.bat
+# 或指定解释器：build_windows.bat C:\Python312\python.exe
+```
+
+产物：`dist/ETF回测工具.exe`（单文件，约 17 MB）
+
+### macOS
+
+> ⚠️ **PyInstaller 不能跨平台交叉编译**：在 Windows 上产不出 `.app`。必须在 Mac 上执行，或用仓库自带的 GitHub Actions（`Actions` → `构建桌面版` → `Run workflow`，产物在 Artifacts 里）。
+
+```bash
+chmod +x build_macos.sh
+./build_macos.sh
+```
+
+产物：`dist/ETF回测工具.app`、`dist/ETF回测工具.dmg`
+
+未签名的 `.app` 首次打开会被 Gatekeeper 拦下，二选一：
+
+```bash
+xattr -cr "ETF回测工具.app"     # 清除隔离属性
+# 或：在访达里右键 → 打开
+```
+
+### 开发态调试
+
+```bash
+python desktop.py                  # 原生窗口
+ETF_NO_WINDOW=1 python desktop.py  # 不开窗口，用系统默认浏览器
+```
+
+| 环境变量 | 说明 | 默认 |
+|----------|------|------|
+| `ETF_HOST` | 监听地址，`0.0.0.0` 时手机可扫码访问 | `0.0.0.0` |
+| `ETF_PORT` | 期望端口，被占用则自动换空闲端口 | `8770` |
+| `ETF_DATA_DIR` | 缓存与日志目录 | 见下 |
+| `ETF_NO_WINDOW` | 设为 `1` 强制用浏览器打开 | — |
+
+数据目录：源码运行在项目内；打包后 Windows 为 `%LOCALAPPDATA%\ETFDviation`，macOS 为 `~/Library/Application Support/ETFDviation`（`desktop.log` 也在这里）。
 
 ---
 
